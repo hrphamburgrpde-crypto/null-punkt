@@ -1,24 +1,7 @@
 require('dotenv').config();
 
-//
-// ================= MONGODB =================
-//
-
-const mongoose = require('mongoose');
-
-mongoose.connect(process.env.MONGO_URI)
-
-.then(() => {
-    console.log('✅ MongoDB verbunden');
-})
-
-.catch(err => {
-    console.error('❌ MongoDB Fehler:', err);
-});
-
-//
-// ================= DISCORD =================
-//
+const fs = require('fs');
+const path = require('path');
 
 const {
     Client,
@@ -27,111 +10,122 @@ const {
     Collection
 } = require('discord.js');
 
-const fs = require('fs');
-const path = require('path');
+const mongoose = require('mongoose');
 
 const client = new Client({
-
     intents: [
-
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.DirectMessages
-
     ],
-
     partials: [
         Partials.Channel
     ]
 });
 
-//
-// ================= COLLECTIONS =================
-//
-
 client.commands = new Collection();
 
-//
-// ================= COMMAND HANDLER =================
-//
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => {
+        console.log('✅ MongoDB verbunden');
+    })
+    .catch(err => {
+        console.log('❌ MongoDB Fehler:', err);
+    });
 
-const commandFolders =
-    fs.readdirSync('./src/commands');
+const commandsPath = path.join(__dirname, 'src', 'commands');
 
-for (const folder of commandFolders) {
+function loadCommands(dir) {
+    const files = fs.readdirSync(dir);
 
-    const commandFiles = fs
-        .readdirSync(`./src/commands/${folder}`)
-        .filter(file => file.endsWith('.js'));
+    for (const file of files) {
+        const filePath = path.join(dir, file);
 
-    for (const file of commandFiles) {
+        const stat = fs.statSync(filePath);
 
-        const command =
-            require(`./commands/${folder}/${file}`);
+        if (stat.isDirectory()) {
+            loadCommands(filePath);
+        } else if (file.endsWith('.js')) {
+            try {
+                const command = require(filePath);
 
-        client.commands.set(
-            command.data.name,
-            command
-        );
-    }
-}
+                if (command.data && command.execute) {
+                    client.commands.set(command.data.name, command);
 
-//
-// ================= EVENT HANDLER =================
-//
-
-const eventFolders =
-    fs.readdirSync('./src/events');
-
-for (const folder of eventFolders) {
-
-    const eventFiles = fs
-        .readdirSync(`./src/events/${folder}`)
-        .filter(file => file.endsWith('.js'));
-
-    for (const file of eventFiles) {
-
-        const event =
-            require(`./events/${folder}/${file}`);
-
-        if (event.once) {
-
-            client.once(
-                event.name,
-                (...args) =>
-                    event.execute(...args, client)
-            );
-
-        } else {
-
-            client.on(
-                event.name,
-                (...args) =>
-                    event.execute(...args, client)
-            );
+                    console.log(`✅ Command geladen: ${command.data.name}`);
+                }
+            } catch (err) {
+                console.log(`❌ Fehler bei Command ${file}:`, err);
+            }
         }
     }
 }
 
-//
-// ================= READY =================
-//
+if (fs.existsSync(commandsPath)) {
+    loadCommands(commandsPath);
+}
 
-client.once('clientReady', () => {
+const eventsPath = path.join(__dirname, 'src', 'events');
 
-    console.log(
-        `✅ Eingeloggt als ${client.user.tag}`
-    );
+function loadEvents(dir) {
+    const files = fs.readdirSync(dir);
 
-    console.log(
-        `${client.user.tag} ist online.`
-    );
+    for (const file of files) {
+        const filePath = path.join(dir, file);
+
+        const stat = fs.statSync(filePath);
+
+        if (stat.isDirectory()) {
+            loadEvents(filePath);
+        } else if (file.endsWith('.js')) {
+            try {
+                const event = require(filePath);
+
+                if (event.name && event.execute) {
+                    if (event.once) {
+                        client.once(event.name, (...args) => event.execute(...args));
+                    } else {
+                        client.on(event.name, (...args) => event.execute(...args));
+                    }
+
+                    console.log(`✅ Event geladen: ${event.name}`);
+                }
+            } catch (err) {
+                console.log(`❌ Fehler bei Event ${file}:`, err);
+            }
+        }
+    }
+}
+
+if (fs.existsSync(eventsPath)) {
+    loadEvents(eventsPath);
+}
+
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+
+    const command = client.commands.get(interaction.commandName);
+
+    if (!command) return;
+
+    try {
+        await command.execute(interaction, client);
+    } catch (err) {
+        console.log(err);
+
+        if (!interaction.replied) {
+            interaction.reply({
+                content: '❌ Fehler beim Ausführen des Commands.',
+                ephemeral: true
+            }).catch(() => {});
+        }
+    }
 });
 
-//
-// ================= LOGIN =================
-//
+client.once('ready', () => {
+    console.log(`✅ Eingeloggt als ${client.user.tag}`);
+});
 
 client.login(process.env.TOKEN);

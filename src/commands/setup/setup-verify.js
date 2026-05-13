@@ -1,111 +1,66 @@
 const {
     SlashCommandBuilder,
     PermissionFlagsBits,
-    ChannelType,
     EmbedBuilder,
-    ButtonBuilder,
-    ButtonStyle,
     ActionRowBuilder,
-    MessageFlags
+    ButtonBuilder,
+    ButtonStyle
 } = require('discord.js');
-
-const VerifySystem = require('../../models/VerifySystem');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('setup-verify')
-        .setDescription('Erstellt ein Verify System')
+        .setDescription('Erstellt ein Verify Panel')
         .addChannelOption(option =>
             option
                 .setName('kanal')
-                .setDescription('Der Verify Kanal')
-                .addChannelTypes(ChannelType.GuildText)
-                .setRequired(true)
-        )
-        .addBooleanOption(option =>
-            option
-                .setName('captcha')
-                .setDescription('Captcha aktivieren oder deaktivieren')
+                .setDescription('Der Kanal für das Verify Panel')
                 .setRequired(true)
         )
         .addRoleOption(option =>
             option
-                .setName('rolle_hinzufügen')
-                .setDescription('Rolle nach Verify geben')
-                .setRequired(false)
-        )
-        .addRoleOption(option =>
-            option
-                .setName('rolle_entfernen')
-                .setDescription('Rolle nach Verify entfernen')
-                .setRequired(false)
-        )
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+                .setName('rolle')
+                .setDescription('Die Rolle die vergeben werden soll')
+                .setRequired(true)
+        ),
 
     async execute(interaction) {
-        if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+
+        if (
+            !interaction.member.permissions.has(PermissionFlagsBits.KickMembers) &&
+            !interaction.member.permissions.has(PermissionFlagsBits.BanMembers)
+        ) {
             return interaction.reply({
-                content: '❌ Dafür brauchst du Administrator Rechte.',
-                flags: MessageFlags.Ephemeral
+                content: '❌ Keine Rechte.',
+                ephemeral: true
             });
         }
 
         const channel = interaction.options.getChannel('kanal');
-        const captchaEnabled = interaction.options.getBoolean('captcha');
-        const verifyRole = interaction.options.getRole('rolle_hinzufügen');
-        const removeRole = interaction.options.getRole('rolle_entfernen');
-
-        await VerifySystem.findOneAndUpdate(
-            { guildId: interaction.guild.id },
-            {
-                channelId: channel.id,
-                captchaEnabled,
-                verifyRole: verifyRole ? verifyRole.id : null,
-                removeRole: removeRole ? removeRole.id : null
-            },
-            { upsert: true, new: true }
-        );
+        const role = interaction.options.getRole('rolle');
 
         const embed = new EmbedBuilder()
-            .setColor('#00ff88')
+            .setColor('#00aaff')
             .setTitle('✅ Verifizierung')
-            .setDescription('Klicke auf den Button, um dich zu verifizieren.')
-            .addFields(
-                {
-                    name: '🛡️ Captcha',
-                    value: captchaEnabled ? '`Aktiviert`' : '`Deaktiviert`',
-                    inline: true
-                },
-                {
-                    name: '🎭 Rolle erhalten',
-                    value: verifyRole ? `${verifyRole}` : '`Keine`',
-                    inline: true
-                },
-                {
-                    name: '🗑️ Rolle entfernen',
-                    value: removeRole ? `${removeRole}` : '`Keine`',
-                    inline: true
-                }
-            )
-            .setThumbnail(interaction.guild.iconURL())
+            .setDescription('Klicke auf den Button unten um dich zu verifizieren.')
             .setTimestamp();
 
-        const button = new ButtonBuilder()
-            .setCustomId('verify_button')
-            .setLabel('Verifizieren')
-            .setEmoji('✅')
-            .setStyle(ButtonStyle.Success);
-
-        const row = new ActionRowBuilder().addComponents(button);
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`verify_${role.id}`)
+                .setLabel('Verifizieren')
+                .setEmoji('✅')
+                .setStyle(ButtonStyle.Success)
+        );
 
         await channel.send({
             embeds: [embed],
             components: [row]
         });
 
-        await interaction.reply({
-            content: `✅ Verify Panel wurde in ${channel} erstellt.`,
-            flags: MessageFlags.Ephemeral
+        return interaction.reply({
+            content: '✅ Verify Panel erstellt.',
+            ephemeral: true
         });
     }
 };
