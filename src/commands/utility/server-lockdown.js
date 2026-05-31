@@ -2,7 +2,10 @@ const {
     SlashCommandBuilder,
     PermissionFlagsBits,
     ChannelType,
-    EmbedBuilder
+    EmbedBuilder,
+    GuildScheduledEventEntityType,
+    GuildScheduledEventPrivacyLevel,
+    GuildScheduledEventStatus
 } = require('discord.js');
 
 const LockdownSystem = require('../../models/LockdownSystem');
@@ -20,7 +23,7 @@ const durations = {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('server-lockdown')
-        .setDescription('Sperrt alle Textkanäle temporär')
+        .setDescription('Sperrt alle offenen Textkanäle temporär')
         .addStringOption(option =>
             option
                 .setName('dauer')
@@ -77,15 +80,8 @@ module.exports = {
             .setTitle('🔒 Server Lockdown')
             .setDescription('Dieser Kanal wurde vorübergehend auf **Read Only** gesetzt.')
             .addFields(
-                {
-                    name: '📄 Grund',
-                    value: `\`${reason}\``
-                },
-                {
-                    name: '👮 Gestartet von',
-                    value: `${interaction.user}`,
-                    inline: true
-                },
+                { name: '📄 Grund', value: `\`${reason}\`` },
+                { name: '👮 Gestartet von', value: `${interaction.user}`, inline: true },
                 {
                     name: '⏱️ Ende',
                     value: endsAt ? `<t:${Math.floor(endsAt.getTime() / 1000)}:R>` : '`Manuell`',
@@ -98,20 +94,21 @@ module.exports = {
         const channels = [];
 
         const textChannels = interaction.guild.channels.cache.filter(channel =>
-            [
-                ChannelType.GuildText,
-                ChannelType.GuildAnnouncement
-            ].includes(channel.type)
+            [ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(channel.type)
         );
 
         for (const channel of textChannels.values()) {
-            const oldOverwrite = channel.permissionOverwrites.cache.get(interaction.guild.id);
+            const everyoneOverwrite = channel.permissionOverwrites.cache.get(interaction.guild.id);
+
+            if (everyoneOverwrite && everyoneOverwrite.deny.has(PermissionFlagsBits.SendMessages)) {
+                continue;
+            }
 
             channels.push({
                 channelId: channel.id,
-                oldAllow: oldOverwrite ? oldOverwrite.allow.bitfield.toString() : null,
-                oldDeny: oldOverwrite ? oldOverwrite.deny.bitfield.toString() : null,
-                existed: !!oldOverwrite
+                existed: !!everyoneOverwrite,
+                oldAllow: everyoneOverwrite ? everyoneOverwrite.allow.bitfield.toString() : null,
+                oldDeny: everyoneOverwrite ? everyoneOverwrite.deny.bitfield.toString() : null
             });
 
             await channel.permissionOverwrites.edit(interaction.guild.id, {
@@ -136,19 +133,30 @@ module.exports = {
 
         let event = null;
 
-        if (interaction.guild.scheduledEvents) {
+        if (interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageEvents)) {
+            const startTime = new Date(Date.now() + 10 * 1000);
+            const endTime = endsAt || new Date(Date.now() + 60 * 60 * 1000);
+
             event = await interaction.guild.scheduledEvents.create({
                 name: '🔒 Server Lockdown',
                 description: `Grund: ${reason}`,
-                scheduledStartTime: new Date(),
-                scheduledEndTime: endsAt || new Date(Date.now() + 60 * 60 * 1000),
-                privacyLevel: 2,
-                entityType: 3,
+                scheduledStartTime: startTime,
+                scheduledEndTime: endTime,
+                privacyLevel: GuildScheduledEventPrivacyLevel.GuildOnly,
+                entityType: GuildScheduledEventEntityType.External,
                 entityMetadata: {
                     location: 'Server Lockdown'
                 },
                 reason: 'Server Lockdown gestartet'
             }).catch(() => null);
+
+            if (event) {
+                setTimeout(async () => {
+                    await event.edit({
+                        status: GuildScheduledEventStatus.Active
+                    }).catch(() => {});
+                }, 12000);
+            }
         }
 
         await LockdownSystem.create({
@@ -164,7 +172,7 @@ module.exports = {
         });
 
         return interaction.editReply({
-            content: `✅ Lockdown gestartet.${endsAt ? `\n⏱️ Automatisches Ende: <t:${Math.floor(endsAt.getTime() / 1000)}:R>` : '\n⏱️ Ende: Manuell'}`
+            content: `✅ Lockdown gestartet.\n🔒 Gesperrte Kanäle: \`${channels.length}\`${endsAt ? `\n⏱️ Ende: <t:${Math.floor(endsAt.getTime() / 1000)}:R>` : '\n⏱️ Ende: `Manuell`'}${event ? '\n📅 Event wurde erstellt.' : '\n⚠️ Event konnte nicht erstellt werden. Prüfe `Events verwalten` Rechte.'}`
         });
     }
 };

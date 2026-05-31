@@ -1,7 +1,8 @@
 const {
     SlashCommandBuilder,
     PermissionFlagsBits,
-    EmbedBuilder
+    EmbedBuilder,
+    GuildScheduledEventStatus
 } = require('discord.js');
 
 const LockdownSystem = require('../../models/LockdownSystem');
@@ -79,20 +80,30 @@ async function endLockdown(guild, data, user = null) {
         })
         .setTimestamp();
 
-    const textChannels = guild.channels.cache.filter(channel =>
-        channel.isTextBased && channel.isTextBased()
-    );
+    for (const saved of data.channels) {
+        const channel = guild.channels.cache.get(saved.channelId);
+        if (!channel || !channel.isTextBased()) continue;
 
-    for (const channel of textChannels.values()) {
-        await channel.send({
+        const msg = await channel.send({
             embeds: [unlockEmbed]
-        }).catch(() => {});
+        }).catch(() => null);
+
+        if (msg) {
+            setTimeout(() => {
+                msg.delete().catch(() => {});
+            }, 10 * 1000);
+        }
     }
 
     if (data.eventId) {
         const event = await guild.scheduledEvents.fetch(data.eventId).catch(() => null);
+
         if (event) {
-            await event.delete('Lockdown beendet').catch(() => {});
+            await event.edit({
+                status: GuildScheduledEventStatus.Completed
+            }).catch(async () => {
+                await event.delete('Lockdown beendet').catch(() => {});
+            });
         }
     }
 
