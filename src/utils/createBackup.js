@@ -20,22 +20,28 @@ async function createGuildBackup(guild, createdBy = 'AUTO') {
 
     const channels = guild.channels.cache
         .sort((a, b) => a.rawPosition - b.rawPosition)
-        .map(channel => ({
-            id: channel.id,
-            name: channel.name,
-            type: channel.type,
-            parentId: channel.parentId,
-            position: channel.rawPosition,
-            topic: channel.topic || null,
-            nsfw: channel.nsfw || false,
-            rateLimitPerUser: channel.rateLimitPerUser || 0,
-            permissionOverwrites: channel.permissionOverwrites.cache.map(perm => ({
-                id: perm.id,
-                type: perm.type,
-                allow: perm.allow.bitfield.toString(),
-                deny: perm.deny.bitfield.toString()
-            }))
-        }));
+        .map(channel => {
+            const overwrites = channel.permissionOverwrites?.cache
+                ? channel.permissionOverwrites.cache.map(perm => ({
+                    id: perm.id,
+                    type: perm.type,
+                    allow: perm.allow.bitfield.toString(),
+                    deny: perm.deny.bitfield.toString()
+                }))
+                : [];
+
+            return {
+                id: channel.id,
+                name: channel.name,
+                type: channel.type,
+                parentId: channel.parentId || null,
+                position: channel.rawPosition || 0,
+                topic: channel.topic || null,
+                nsfw: channel.nsfw || false,
+                rateLimitPerUser: channel.rateLimitPerUser || 0,
+                permissionOverwrites: overwrites
+            };
+        });
 
     const backupId = createBackupId();
 
