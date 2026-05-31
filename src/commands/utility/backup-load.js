@@ -9,7 +9,7 @@ const Backup = require('../../models/Backup');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('backup-load')
-        .setDescription('Lädt ein Server Backup')
+        .setDescription('Lädt ein Server Backup und ersetzt Kanäle/Rollen')
         .addStringOption(option =>
             option
                 .setName('backup_id')
@@ -40,13 +40,44 @@ module.exports = {
             });
         }
 
-        const data = backup.data;
+        const guild = interaction.guild;
+        const botMember = guild.members.me;
+        const commandChannelId = interaction.channel.id;
 
+        await interaction.editReply({
+            content: '⚠️ Backup wird geladen. Alte Kanäle und Rollen werden ersetzt...'
+        });
+
+        // Alte Kanäle löschen, außer aktueller Command-Kanal
+        for (const channel of guild.channels.cache.values()) {
+            if (channel.id === commandChannelId) continue;
+
+            await channel.delete('Backup Load - alte Kanäle löschen').catch(() => {});
+        }
+
+        // Alte Rollen löschen
+        const rolesToDelete = guild.roles.cache
+            .filter(role =>
+                role.id !== guild.id &&
+                !role.managed &&
+                role.editable &&
+                role.position < botMember.roles.highest.position
+            )
+            .sort((a, b) => b.position - a.position);
+
+        for (const role of rolesToDelete.values()) {
+            await role.delete('Backup Load - alte Rollen löschen').catch(() => {});
+        }
+
+        const data = backup.data;
         const roleMap = new Map();
         const channelMap = new Map();
 
-        for (const roleData of data.roles.reverse()) {
-            const role = await interaction.guild.roles.create({
+        // Rollen neu erstellen
+        const roles = [...data.roles].reverse();
+
+        for (const roleData of roles) {
+            const role = await guild.roles.create({
                 name: roleData.name,
                 color: roleData.color,
                 hoist: roleData.hoist,
@@ -55,16 +86,21 @@ module.exports = {
                 reason: `Backup Load ${backupId}`
             }).catch(() => null);
 
-            if (role) roleMap.set(roleData.id, role.id);
+            if (role) {
+                roleMap.set(roleData.id, role.id);
+            }
         }
 
+        // Kategorien zuerst
         const categories = data.channels.filter(c => c.type === ChannelType.GuildCategory);
         const others = data.channels.filter(c => c.type !== ChannelType.GuildCategory);
 
         for (const channelData of categories) {
-            const channel = await createBackupChannel(interaction, channelData, null, roleMap);
+            const channel = await createBackupChannel(guild, channelData, null, roleMap);
 
-            if (channel) channelMap.set(channelData.id, channel.id);
+            if (channel) {
+                channelMap.set(channelData.id, channel.id);
+            }
         }
 
         for (const channelData of others) {
@@ -72,30 +108,43 @@ module.exports = {
                 ? channelMap.get(channelData.parentId)
                 : null;
 
-            const channel = await createBackupChannel(interaction, channelData, parentId, roleMap);
+            const channel = await createBackupChannel(guild, channelData, parentId, roleMap);
 
-            if (channel) channelMap.set(channelData.id, channel.id);
+            if (channel) {
+                channelMap.set(channelData.id, channel.id);
+            }
         }
 
-        return interaction.editReply({
-            content: `✅ Backup \`${backupId}\` wurde geladen.`
-        });
+        await interaction.user.send({
+            content: `✅ Backup \`${backupId}\` wurde auf **${guild.name}** geladen.`
+        }).catch(() => {});
+
+        await interaction.editReply({
+            content: `✅ Backup \`${backupId}\` wurde geladen. Dieser alte Kanal wird gleich gelöscht.`
+        }).catch(() => {});
+
+        setTimeout(async () => {
+            const oldChannel = guild.channels.cache.get(commandChannelId);
+            if (oldChannel) {
+                await oldChannel.delete('Backup Load - letzter alter Kanal').catch(() => {});
+            }
+        }, 5000);
     }
 };
 
-async function createBackupChannel(interaction, channelData, parentId, roleMap) {
+async function createBackupChannel(guild, channelData, parentId, roleMap) {
     const overwrites = channelData.permissionOverwrites.map(perm => {
-        const id = roleMap.get(perm.id) || perm.id;
+        const mappedId = roleMap.get(perm.id) || perm.id;
 
         return {
-            id,
+            id: mappedId,
             allow: BigInt(perm.allow),
             deny: BigInt(perm.deny),
             type: perm.type
         };
     });
 
-    return interaction.guild.channels.create({
+    return guild.channels.create({
         name: channelData.name,
         type: channelData.type,
         parent: parentId,
