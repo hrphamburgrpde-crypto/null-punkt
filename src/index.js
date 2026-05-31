@@ -18,10 +18,14 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
-        GatewayIntentBits.DirectMessages
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildPresences
     ],
     partials: [
-        Partials.Channel
+        Partials.Channel,
+        Partials.Message,
+        Partials.User,
+        Partials.GuildMember
     ]
 });
 
@@ -31,14 +35,13 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ MongoDB verbunden'))
     .catch(err => console.log('❌ MongoDB Fehler:', err));
 
-const commandsPath = path.join(__dirname, 'src', 'commands');
-
 function loadCommands(dir) {
-    if (!fs.existsSync(dir)) return;
+    if (!fs.existsSync(dir)) {
+        console.log(`❌ Commands Ordner nicht gefunden: ${dir}`);
+        return;
+    }
 
-    const files = fs.readdirSync(dir);
-
-    for (const file of files) {
+    for (const file of fs.readdirSync(dir)) {
         const filePath = path.join(dir, file);
         const stat = fs.statSync(filePath);
 
@@ -49,32 +52,22 @@ function loadCommands(dir) {
 
         if (!file.endsWith('.js')) continue;
 
-        try {
-            const command = require(filePath);
+        const command = require(filePath);
 
-            if (!command.data || !command.execute) {
-                console.log(`⚠️ Command übersprungen: ${file}`);
-                continue;
-            }
-
+        if (command.data && command.execute) {
             client.commands.set(command.data.name, command);
             console.log(`✅ Command geladen: ${command.data.name}`);
-        } catch (err) {
-            console.log(`❌ Fehler bei Command ${file}:`, err);
         }
     }
 }
 
-loadCommands(commandsPath);
-
-const eventsPath = path.join(__dirname, 'src', 'events');
-
 function loadEvents(dir) {
-    if (!fs.existsSync(dir)) return;
+    if (!fs.existsSync(dir)) {
+        console.log(`❌ Events Ordner nicht gefunden: ${dir}`);
+        return;
+    }
 
-    const files = fs.readdirSync(dir);
-
-    for (const file of files) {
+    for (const file of fs.readdirSync(dir)) {
         const filePath = path.join(dir, file);
         const stat = fs.statSync(filePath);
 
@@ -85,59 +78,22 @@ function loadEvents(dir) {
 
         if (!file.endsWith('.js')) continue;
 
-        try {
-            const event = require(filePath);
+        const event = require(filePath);
 
-            if (!event.name || !event.execute) {
-                console.log(`⚠️ Event übersprungen: ${file}`);
-                continue;
-            }
+        if (!event.name || !event.execute) continue;
 
-            if (event.once) {
-                client.once(event.name, (...args) => event.execute(...args, client));
-            } else {
-                client.on(event.name, (...args) => event.execute(...args, client));
-            }
-
-            console.log(`✅ Event geladen: ${event.name}`);
-        } catch (err) {
-            console.log(`❌ Fehler bei Event ${file}:`, err);
+        if (event.once) {
+            client.once(event.name, (...args) => event.execute(...args, client));
+        } else {
+            client.on(event.name, (...args) => event.execute(...args, client));
         }
+
+        console.log(`✅ Event geladen: ${event.name}`);
     }
 }
 
-loadEvents(eventsPath);
-
-client.on(Events.InteractionCreate, async interaction => {
-    if (!interaction.isChatInputCommand()) return;
-
-    const command = client.commands.get(interaction.commandName);
-
-    if (!command) {
-        return interaction.reply({
-            content: '❌ Dieser Command wurde nicht gefunden.',
-            flags: 64
-        }).catch(() => {});
-    }
-
-    try {
-        await command.execute(interaction, client);
-    } catch (err) {
-        console.log(`❌ Fehler bei /${interaction.commandName}:`, err);
-
-        if (interaction.replied || interaction.deferred) {
-            return interaction.followUp({
-                content: '❌ Fehler beim Ausführen des Commands.',
-                flags: 64
-            }).catch(() => {});
-        }
-
-        return interaction.reply({
-            content: '❌ Fehler beim Ausführen des Commands.',
-            flags: 64
-        }).catch(() => {});
-    }
-});
+loadCommands(path.join(__dirname, 'commands'));
+loadEvents(path.join(__dirname, 'events'));
 
 client.once(Events.ClientReady, () => {
     console.log(`✅ Eingeloggt als ${client.user.tag}`);
