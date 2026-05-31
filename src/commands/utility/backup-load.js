@@ -1,7 +1,8 @@
 const {
     SlashCommandBuilder,
     PermissionFlagsBits,
-    ChannelType
+    ChannelType,
+    EmbedBuilder
 } = require('discord.js');
 
 const Backup = require('../../models/Backup');
@@ -45,17 +46,14 @@ module.exports = {
         const commandChannelId = interaction.channel.id;
 
         await interaction.editReply({
-            content: '⚠️ Backup wird geladen. Alte Kanäle und Rollen werden ersetzt...'
+            content: '⚠️ Backup wird geladen. Alte Kanäle und normale Rollen werden ersetzt...'
         });
 
-        // Alte Kanäle löschen, außer aktueller Command-Kanal
         for (const channel of guild.channels.cache.values()) {
             if (channel.id === commandChannelId) continue;
-
             await channel.delete('Backup Load - alte Kanäle löschen').catch(() => {});
         }
 
-        // Alte Rollen löschen
         const rolesToDelete = guild.roles.cache
             .filter(role =>
                 role.id !== guild.id &&
@@ -66,14 +64,14 @@ module.exports = {
             .sort((a, b) => b.position - a.position);
 
         for (const role of rolesToDelete.values()) {
-            await role.delete('Backup Load - alte Rollen löschen').catch(() => {});
+            await role.delete('Backup Load - alte normale Rollen löschen').catch(() => {});
         }
 
         const data = backup.data;
         const roleMap = new Map();
         const channelMap = new Map();
+        const createdTextChannels = [];
 
-        // Rollen neu erstellen
         const roles = [...data.roles].reverse();
 
         for (const roleData of roles) {
@@ -86,21 +84,16 @@ module.exports = {
                 reason: `Backup Load ${backupId}`
             }).catch(() => null);
 
-            if (role) {
-                roleMap.set(roleData.id, role.id);
-            }
+            if (role) roleMap.set(roleData.id, role.id);
         }
 
-        // Kategorien zuerst
         const categories = data.channels.filter(c => c.type === ChannelType.GuildCategory);
         const others = data.channels.filter(c => c.type !== ChannelType.GuildCategory);
 
         for (const channelData of categories) {
             const channel = await createBackupChannel(guild, channelData, null, roleMap);
 
-            if (channel) {
-                channelMap.set(channelData.id, channel.id);
-            }
+            if (channel) channelMap.set(channelData.id, channel.id);
         }
 
         for (const channelData of others) {
@@ -112,7 +105,35 @@ module.exports = {
 
             if (channel) {
                 channelMap.set(channelData.id, channel.id);
+
+                if (channel.type === ChannelType.GuildText) {
+                    createdTextChannels.push(channel);
+                }
             }
+        }
+
+        const infoEmbed = new EmbedBuilder()
+            .setColor('#00aaff')
+            .setTitle('📦 Backup System')
+            .setDescription('Dieser Kanal wurde durch das Backup System wiederhergestellt.')
+            .addFields(
+                {
+                    name: '🆔 Backup ID',
+                    value: `\`${backupId}\``,
+                    inline: true
+                },
+                {
+                    name: '👤 Geladen von',
+                    value: `${interaction.user}`,
+                    inline: true
+                }
+            )
+            .setTimestamp();
+
+        for (const channel of createdTextChannels) {
+            await channel.send({
+                embeds: [infoEmbed]
+            }).catch(() => {});
         }
 
         await interaction.user.send({
