@@ -16,6 +16,10 @@ const schema = new mongoose.Schema({
     activatedAt: {
         type: Date,
         default: Date.now
+    },
+    invite: {
+        type: String,
+        default: null
     }
 });
 
