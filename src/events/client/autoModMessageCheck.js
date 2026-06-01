@@ -11,8 +11,6 @@ const spamCache = new Map();
 const badWords = [
     'hurensohn',
     'huso',
-    'nigger',
-    'nigga',
     'fick dich'
 ];
 
@@ -23,36 +21,44 @@ module.exports = {
         if (!message.guild) return;
         if (message.author.bot) return;
 
+        console.log(`[AutoMod] Nachricht erkannt von ${message.author.tag}: ${message.content}`);
+
         const data = await AutoModSystem.findOne({
             guildId: message.guild.id
         });
 
-        if (!data) return;
+        if (!data) {
+            console.log('[AutoMod] Kein AutoMod Setup gefunden.');
+            return;
+        }
 
-        if (message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
+        if (message.member.permissions.has(PermissionFlagsBits.Administrator)) {
+            console.log('[AutoMod] User ist Admin, wird ignoriert.');
+            return;
+        }
 
         const content = message.content || '';
         const lower = content.toLowerCase();
 
         let reason = null;
 
-        if (data.antiEveryone && containsEveryone(message)) {
-    reason = 'Anti Everyone/Here';
-}
+        if (data.antiEveryone && message.mentions.everyone) {
+            reason = 'Anti Everyone/Here';
+        }
 
-        if (!reason && data.antiLink && containsLink(content)) {
+        if (!reason && data.antiLink && /(https?:\/\/|www\.|\.com|\.net|\.de|\.org|\.io|\.xyz)/i.test(content)) {
             reason = 'Anti Link';
         }
 
-        if (!reason && data.antiInvite && containsInvite(content)) {
+        if (!reason && data.antiInvite && /(discord\.gg\/|discord\.com\/invite\/|discordapp\.com\/invite\/)/i.test(content)) {
             reason = 'Anti Invite';
         }
 
-        if (!reason && data.antiBadWords && containsBadWord(lower)) {
+        if (!reason && data.antiBadWords && badWords.some(word => lower.includes(word))) {
             reason = 'Anti Bad Words';
         }
 
-        if (!reason && data.antiMassMention && hasMassMentions(message)) {
+        if (!reason && data.antiMassMention && (message.mentions.users.size >= 5 || message.mentions.roles.size >= 3)) {
             reason = 'Anti Mass Mention';
         }
 
@@ -72,39 +78,22 @@ module.exports = {
             reason = 'Anti Spam';
         }
 
-        if (!reason) return;
+        if (!reason) {
+            console.log('[AutoMod] Keine Regel ausgelöst.');
+            return;
+        }
+
+        console.log(`[AutoMod] Regel ausgelöst: ${reason}`);
 
         await punish(message, data, reason);
     }
 };
 
-function containsLink(text) {
-    return /(https?:\/\/|www\.|\.com|\.net|\.gg|\.de|\.org|\.io|\.xyz)/i.test(text);
-}
-
-function containsInvite(text) {
-    return /(discord\.gg\/|discord\.com\/invite\/|discordapp\.com\/invite\/)/i.test(text);
-}
-
-function containsEveryone(message) {
-    return message.mentions.everyone;
-}
-
-function containsBadWord(text) {
-    return badWords.some(word => text.includes(word));
-}
-
-function hasMassMentions(message) {
-    return message.mentions.users.size >= 5 || message.mentions.roles.size >= 3;
-}
-
 function isCapsSpam(text) {
     const letters = text.replace(/[^a-zA-ZÄÖÜäöüß]/g, '');
-
     if (letters.length < 12) return false;
 
     const upper = letters.replace(/[^A-ZÄÖÜ]/g, '');
-
     return upper.length / letters.length >= 0.75;
 }
 
@@ -119,8 +108,8 @@ function isSpam(message) {
     const key = `${message.guild.id}_${message.author.id}`;
     const now = Date.now();
 
-    const data = spamCache.get(key) || [];
-    const recent = data.filter(time => now - time < 5000);
+    const old = spamCache.get(key) || [];
+    const recent = old.filter(time => now - time < 5000);
 
     recent.push(now);
     spamCache.set(key, recent);
@@ -129,33 +118,23 @@ function isSpam(message) {
 }
 
 async function punish(message, data, reason) {
-    await message.delete().catch(() => {});
+    await message.delete().catch(err => {
+        console.log('[AutoMod] Nachricht konnte nicht gelöscht werden:', err.message);
+    });
 
-    if (data.punishment === 'timeout') {
-        if (message.member.moderatable) {
-            await message.member.timeout(
-                data.timeoutDuration || 5 * 60 * 1000,
-                reason
-            ).catch(() => {});
-        }
+    if (data.punishment === 'timeout' && message.member.moderatable) {
+        await message.member.timeout(data.timeoutDuration || 300000, reason).catch(() => {});
     }
 
-    if (data.punishment === 'kick') {
-        if (message.member.kickable) {
-            await message.member.kick(reason).catch(() => {});
-        }
+    if (data.punishment === 'kick' && message.member.kickable) {
+        await message.member.kick(reason).catch(() => {});
     }
 
-    if (data.punishment === 'ban') {
-        if (message.member.bannable) {
-            await message.member.ban({
-                reason
-            }).catch(() => {});
-        }
+    if (data.punishment === 'ban' && message.member.bannable) {
+        await message.member.ban({ reason }).catch(() => {});
     }
 
     if (data.punishment === 'warn') {
-        // Nur einfache Warn-Nachricht, falls dein Warn-Model anders ist
         await message.channel.send({
             content: `⚠️ ${message.author}, bitte beachte die Regeln. Grund: **${reason}**`
         }).then(msg => {
@@ -177,34 +156,13 @@ async function logAutoMod(message, data, reason) {
         .setColor('#ff0000')
         .setTitle('🛡️ AutoMod Aktion')
         .addFields(
-            {
-                name: '👤 User',
-                value: `${message.author}`,
-                inline: true
-            },
-            {
-                name: '📍 Kanal',
-                value: `${message.channel}`,
-                inline: true
-            },
-            {
-                name: '⚠️ Grund',
-                value: `\`${reason}\``,
-                inline: true
-            },
-            {
-                name: '⚖️ Strafe',
-                value: `\`${data.punishment}\``,
-                inline: true
-            },
-            {
-                name: '💬 Nachricht',
-                value: `\`${(message.content || 'Keine Nachricht').slice(0, 900)}\``
-            }
+            { name: '👤 User', value: `${message.author}`, inline: true },
+            { name: '📍 Kanal', value: `${message.channel}`, inline: true },
+            { name: '⚠️ Grund', value: `\`${reason}\``, inline: true },
+            { name: '⚖️ Strafe', value: `\`${data.punishment}\``, inline: true },
+            { name: '💬 Nachricht', value: `\`${(message.content || 'Keine Nachricht').slice(0, 900)}\`` }
         )
         .setTimestamp();
 
-    await logChannel.send({
-        embeds: [embed]
-    }).catch(() => {});
+    await logChannel.send({ embeds: [embed] }).catch(() => {});
 }
