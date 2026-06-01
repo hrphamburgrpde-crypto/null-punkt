@@ -5,6 +5,7 @@ const {
 } = require('discord.js');
 
 const colors = {
+    none: '#2b2d31',
     blue: '#00aaff',
     red: '#ff0000',
     green: '#00ff88',
@@ -42,11 +43,18 @@ module.exports = {
             });
         }
 
-        const colorName = interaction.customId.replace('send_embed_modal_', '');
+        const raw = interaction.customId.replace('send_embed_modal_', '');
+        const parts = raw.split('_');
+
+        const colorName = parts[0];
+        const pingType = parts[1] || 'none';
+        const pingId = parts.slice(2).join('_') || 'none';
+
         const title = interaction.fields.getTextInputValue('embed_title');
         const text = interaction.fields.getTextInputValue('embed_text');
 
         const embed = new EmbedBuilder()
+            .setColor(colors[colorName] || '#2b2d31')
             .setTitle(title)
             .setDescription(text)
             .setFooter({
@@ -54,12 +62,39 @@ module.exports = {
             })
             .setTimestamp();
 
-        if (colorName !== 'none') {
-            embed.setColor(colors[colorName] || '#00aaff');
+        let content = null;
+        let allowedMentions = {
+            parse: []
+        };
+
+        if (pingType === 'everyone') {
+            content = '@everyone';
+            allowedMentions = { parse: ['everyone'] };
+        }
+
+        if (pingType === 'here') {
+            content = '@here';
+            allowedMentions = { parse: ['everyone'] };
+        }
+
+        if (pingType === 'role') {
+            content = `<@&${pingId}>`;
+            allowedMentions = {
+                roles: [pingId]
+            };
+        }
+
+        if (pingType === 'user') {
+            content = `<@${pingId}>`;
+            allowedMentions = {
+                users: [pingId]
+            };
         }
 
         await interaction.channel.send({
-            embeds: [embed]
+            content,
+            embeds: [embed],
+            allowedMentions
         });
 
         return interaction.reply({

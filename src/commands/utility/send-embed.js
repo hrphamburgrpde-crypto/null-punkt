@@ -34,6 +34,29 @@ module.exports = {
                     { name: 'Dunkelrot', value: 'dark_red' },
                     { name: 'Dunkelgrün', value: 'dark_green' }
                 )
+        )
+        .addStringOption(option =>
+            option
+                .setName('ping')
+                .setDescription('Optionaler Ping')
+                .setRequired(false)
+                .addChoices(
+                    { name: 'Kein Ping', value: 'none' },
+                    { name: '@everyone', value: 'everyone' },
+                    { name: '@here', value: 'here' }
+                )
+        )
+        .addRoleOption(option =>
+            option
+                .setName('rolle')
+                .setDescription('Optional eine Rolle pingen')
+                .setRequired(false)
+        )
+        .addUserOption(option =>
+            option
+                .setName('member')
+                .setDescription('Optional einen Member pingen')
+                .setRequired(false)
         ),
 
     async execute(interaction) {
@@ -51,9 +74,26 @@ module.exports = {
         }
 
         const color = interaction.options.getString('farbe');
+        const ping = interaction.options.getString('ping') || 'none';
+        const role = interaction.options.getRole('rolle');
+        const member = interaction.options.getUser('member');
+
+        let pingType = 'none';
+        let pingId = 'none';
+
+        if (role) {
+            pingType = 'role';
+            pingId = role.id;
+        } else if (member) {
+            pingType = 'user';
+            pingId = member.id;
+        } else if (ping === 'everyone' || ping === 'here') {
+            pingType = ping;
+            pingId = ping;
+        }
 
         const modal = new ModalBuilder()
-            .setCustomId(`send_embed_modal_${color}`)
+            .setCustomId(`send_embed_modal_${color}_${pingType}_${pingId}`)
             .setTitle('Embed erstellen');
 
         const titleInput = new TextInputBuilder()
