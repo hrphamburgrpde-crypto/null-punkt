@@ -36,9 +36,9 @@ module.exports = {
 
         let reason = null;
 
-        if (data.antiEveryone && containsEveryone(content)) {
-            reason = 'Anti Everyone/Here';
-        }
+        if (data.antiEveryone && containsEveryone(message)) {
+    reason = 'Anti Everyone/Here';
+}
 
         if (!reason && data.antiLink && containsLink(content)) {
             reason = 'Anti Link';
@@ -86,8 +86,8 @@ function containsInvite(text) {
     return /(discord\.gg\/|discord\.com\/invite\/|discordapp\.com\/invite\/)/i.test(text);
 }
 
-function containsEveryone(text) {
-    return text.includes('@everyone') || text.includes('@here');
+function containsEveryone(message) {
+    return message.mentions.everyone;
 }
 
 function containsBadWord(text) {
