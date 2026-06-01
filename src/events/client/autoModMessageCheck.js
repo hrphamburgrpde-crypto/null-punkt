@@ -33,9 +33,20 @@ module.exports = {
         }
 
         if (message.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            console.log('[AutoMod] User ist Admin, wird ignoriert.');
-            return;
-        }
+    	return;
+	}
+
+	if (data.whitelistChannelIds?.includes(message.channel.id)) {
+    return;
+}
+
+if (
+    data.whitelistRoleIds?.some(roleId =>
+        message.member.roles.cache.has(roleId)
+    )
+) {
+    return;
+}
 
         const content = message.content || '';
         const lower = content.toLowerCase();
