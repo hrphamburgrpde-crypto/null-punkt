@@ -54,7 +54,9 @@ module.exports = {
         const text = interaction.fields.getTextInputValue('embed_text');
 
         const embed = new EmbedBuilder()
-            .setColor(colors[colorName] || '#2b2d31')
+            if (colorName !== 'none') {
+    embed.setColor(colors[colorName]);
+}
             .setTitle(title)
             .setDescription(text)
             .setFooter({
