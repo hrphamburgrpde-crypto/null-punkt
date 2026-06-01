@@ -49,6 +49,23 @@ module.exports = {
                     inline: true
                 },
                 {
+                    name: '⭐ Premium',
+                    value:
+                        '`/premium-status`\n' +
+                        '`/premium-code-redeem`\n' +
+                        '`/premium-server-invite`',
+                    inline: true
+                },
+                {
+                    name: '👑 Bot Owner Commands',
+                    value:
+                        '`/premium-code-create`\n' +
+                        '`/premium-code-list`\n' +
+                        '`/premium-code-delete`\n' +
+                        '`/premium-server-panel`',
+                    inline: true
+                },
+                {
                     name: '🕒 Schicht System',
                     value:
                         '`/time-lb`',
@@ -58,6 +75,7 @@ module.exports = {
                     name: '📝 Embed / Utility',
                     value:
                         '`/send-embed`\n' +
+                        '`/cmds`\n' +
                         '`/global-stats`\n' +
                         '`/live-ping`\n' +
                         '`/ping`\n' +
