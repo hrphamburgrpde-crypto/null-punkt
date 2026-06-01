@@ -43,22 +43,36 @@ module.exports = {
         ),
 
     async execute(interaction) {
+
+        console.log('========== PREMIUM DEBUG ==========');
+        console.log('OWNER_ID:', process.env.OWNER_ID);
+        console.log('USER_ID:', interaction.user.id);
+        console.log('===================================');
+
         if (interaction.user.id !== process.env.OWNER_ID) {
             return interaction.reply({
-                content: '❌ Nur der Bot Owner darf Premium Codes erstellen.',
+                content:
+                    `❌ Nur der Bot Owner darf Premium Codes erstellen.\n\n` +
+                    `👤 Deine ID:\n\`${interaction.user.id}\`\n\n` +
+                    `⚙️ OWNER_ID aus Railway:\n\`${process.env.OWNER_ID || 'NICHT GESETZT'}\``,
                 flags: 64
             });
         }
 
-        const code = interaction.options.getString('code').toUpperCase();
+        const code = interaction.options
+            .getString('code')
+            .toUpperCase();
+
         const maxUses = interaction.options.getInteger('nutzungen');
         const duration = interaction.options.getString('dauer');
 
-        const exists = await PremiumCode.findOne({ code });
+        const exists = await PremiumCode.findOne({
+            code
+        });
 
         if (exists) {
             return interaction.reply({
-                content: '❌ Dieser Code existiert bereits.',
+                content: '❌ Dieser Premium Code existiert bereits.',
                 flags: 64
             });
         }
@@ -71,7 +85,11 @@ module.exports = {
         });
 
         return interaction.reply({
-            content: `✅ Premium Code erstellt.\n🆔 Code: \`${code}\`\n🔁 Nutzungen: \`${maxUses}\`\n⏱️ Dauer: \`${duration}\``,
+            content:
+                `✅ Premium Code erstellt.\n\n` +
+                `🆔 Code: \`${code}\`\n` +
+                `🔁 Nutzungen: \`${maxUses}\`\n` +
+                `⏱️ Dauer: \`${duration}\``,
             flags: 64
         });
     }
