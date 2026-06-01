@@ -5,7 +5,6 @@ const {
 } = require('discord.js');
 
 const colors = {
-    none: '#2b2d31',
     blue: '#00aaff',
     red: '#ff0000',
     green: '#00ff88',
@@ -54,15 +53,16 @@ module.exports = {
         const text = interaction.fields.getTextInputValue('embed_text');
 
         const embed = new EmbedBuilder()
-            if (colorName !== 'none') {
-    embed.setColor(colors[colorName]);
-}
             .setTitle(title)
             .setDescription(text)
             .setFooter({
                 text: `Gesendet von ${interaction.user.tag}`
             })
             .setTimestamp();
+
+        if (colorName !== 'none' && colors[colorName]) {
+            embed.setColor(colors[colorName]);
+        }
 
         let content = null;
         let allowedMentions = {
@@ -71,12 +71,16 @@ module.exports = {
 
         if (pingType === 'everyone') {
             content = '@everyone';
-            allowedMentions = { parse: ['everyone'] };
+            allowedMentions = {
+                parse: ['everyone']
+            };
         }
 
         if (pingType === 'here') {
             content = '@here';
-            allowedMentions = { parse: ['everyone'] };
+            allowedMentions = {
+                parse: ['everyone']
+            };
         }
 
         if (pingType === 'role') {
