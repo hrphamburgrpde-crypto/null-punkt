@@ -13,11 +13,17 @@ const schema = new mongoose.Schema({
     antiSpam: { type: Boolean, default: false },
     antiCaps: { type: Boolean, default: false },
     antiMassMention: { type: Boolean, default: false },
-    antiBadWords: { type: Boolean, default: false },
     antiEveryone: { type: Boolean, default: false },
-    antiEmojiSpam: { type: Boolean, default: false },
-    antiStickerSpam: { type: Boolean, default: false },
-    antiRaid: { type: Boolean, default: false },
+
+    whitelistRoleIds: {
+        type: Array,
+        default: []
+    },
+
+    whitelistChannelIds: {
+        type: Array,
+        default: []
+    },
 
     punishment: {
         type: String,

@@ -93,11 +93,24 @@ function createAutoModEmbed(data) {
             { name: '👥 Anti Mass Mention', value: status(data.antiMassMention), inline: true },
             { name: '📢 Anti Everyone/Here', value: status(data.antiEveryone), inline: true },
             { name: '⚖️ Strafe', value: `\`${data.punishment}\``, inline: true },
-            { name: '⏱️ Timeout Dauer', value: `\`${Math.floor(data.timeoutDuration / 60000)} Minuten\``, inline: true }
+            { name: '⏱️ Timeout Dauer', value: `\`${Math.floor(data.timeoutDuration / 60000)} Minuten\``, inline: true },
+            {
+                name: '🛡️ Whitelist Rollen',
+                value: data.whitelistRoleIds?.length
+                    ? data.whitelistRoleIds.map(id => `<@&${id}>`).join('\n')
+                    : '`Keine`',
+                inline: true
+            },
+            {
+                name: '📁 Whitelist Kanäle',
+                value: data.whitelistChannelIds?.length
+                    ? data.whitelistChannelIds.map(id => `<#${id}>`).join('\n')
+                    : '`Keine`',
+                inline: true
+            }
         )
         .setTimestamp();
 }
-
 function createAutoModComponents(data) {
     const row1 = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -117,6 +130,7 @@ function createAutoModComponents(data) {
             .setLabel('Anti Spam')
             .setEmoji(data.antiSpam ? '🟢' : '🔴')
             .setStyle(buttonStyle(data.antiSpam))
+
     );
 
     const row2 = new ActionRowBuilder().addComponents(
@@ -165,7 +179,21 @@ function createAutoModComponents(data) {
             )
     );
 
-    return [row1, row2, row3, row4];
+const row5 = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+        .setCustomId('automod_whitelist_roles')
+        .setLabel('Whitelist Rollen')
+        .setEmoji('🛡️')
+        .setStyle(ButtonStyle.Primary),
+
+    new ButtonBuilder()
+        .setCustomId('automod_whitelist_channels')
+        .setLabel('Whitelist Kanäle')
+        .setEmoji('📁')
+        .setStyle(ButtonStyle.Primary)
+);
+
+    return [row1, row2, row3, row4, row5];
 }
 
 module.exports.createAutoModEmbed = createAutoModEmbed;
