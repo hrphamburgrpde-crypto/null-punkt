@@ -62,7 +62,7 @@ module.exports = {
 
         await panelChannel.send({
             embeds: [createAutoModEmbed(data)],
-            components: createAutoModComponents()
+            components: createAutoModComponents(data)
         });
 
         return interaction.reply({
@@ -73,7 +73,11 @@ module.exports = {
 };
 
 function status(value) {
-    return value ? '🟢 `An`' : '🔴 `Aus`';
+    return value ? '🟢 `Aktiviert`' : '🔴 `Deaktiviert`';
+}
+
+function buttonStyle(value) {
+    return value ? ButtonStyle.Success : ButtonStyle.Danger;
 }
 
 function createAutoModEmbed(data) {
@@ -87,32 +91,52 @@ function createAutoModEmbed(data) {
             { name: '⚡ Anti Spam', value: status(data.antiSpam), inline: true },
             { name: '🔠 Anti Caps', value: status(data.antiCaps), inline: true },
             { name: '👥 Anti Mass Mention', value: status(data.antiMassMention), inline: true },
-            { name: '🤬 Anti Bad Words', value: status(data.antiBadWords), inline: true },
             { name: '📢 Anti Everyone/Here', value: status(data.antiEveryone), inline: true },
-            { name: '😀 Anti Emoji Spam', value: status(data.antiEmojiSpam), inline: true },
-            { name: '🏷️ Anti Sticker Spam', value: status(data.antiStickerSpam), inline: true },
-            { name: '🚨 Anti Raid', value: status(data.antiRaid), inline: true },
             { name: '⚖️ Strafe', value: `\`${data.punishment}\``, inline: true },
             { name: '⏱️ Timeout Dauer', value: `\`${Math.floor(data.timeoutDuration / 60000)} Minuten\``, inline: true }
         )
         .setTimestamp();
 }
 
-function createAutoModComponents() {
+function createAutoModComponents(data) {
     const row1 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('automod_toggle_antiLink').setLabel('Anti Link').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('automod_toggle_antiInvite').setLabel('Anti Invite').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('automod_toggle_antiSpam').setLabel('Anti Spam').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('automod_toggle_antiCaps').setLabel('Anti Caps').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('automod_toggle_antiRaid').setLabel('Anti Raid').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+            .setCustomId('automod_toggle_antiLink')
+            .setLabel('Anti Link')
+            .setEmoji(data.antiLink ? '🟢' : '🔴')
+            .setStyle(buttonStyle(data.antiLink)),
+
+        new ButtonBuilder()
+            .setCustomId('automod_toggle_antiInvite')
+            .setLabel('Anti Invite')
+            .setEmoji(data.antiInvite ? '🟢' : '🔴')
+            .setStyle(buttonStyle(data.antiInvite)),
+
+        new ButtonBuilder()
+            .setCustomId('automod_toggle_antiSpam')
+            .setLabel('Anti Spam')
+            .setEmoji(data.antiSpam ? '🟢' : '🔴')
+            .setStyle(buttonStyle(data.antiSpam))
     );
 
     const row2 = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('automod_toggle_antiMassMention').setLabel('Mass Mention').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('automod_toggle_antiBadWords').setLabel('Bad Words').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('automod_toggle_antiEveryone').setLabel('Everyone/Here').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('automod_toggle_antiEmojiSpam').setLabel('Emoji Spam').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('automod_toggle_antiStickerSpam').setLabel('Sticker Spam').setStyle(ButtonStyle.Secondary)
+        new ButtonBuilder()
+            .setCustomId('automod_toggle_antiCaps')
+            .setLabel('Anti Caps')
+            .setEmoji(data.antiCaps ? '🟢' : '🔴')
+            .setStyle(buttonStyle(data.antiCaps)),
+
+        new ButtonBuilder()
+            .setCustomId('automod_toggle_antiMassMention')
+            .setLabel('Mass Mention')
+            .setEmoji(data.antiMassMention ? '🟢' : '🔴')
+            .setStyle(buttonStyle(data.antiMassMention)),
+
+        new ButtonBuilder()
+            .setCustomId('automod_toggle_antiEveryone')
+            .setLabel('Everyone/Here')
+            .setEmoji(data.antiEveryone ? '🟢' : '🔴')
+            .setStyle(buttonStyle(data.antiEveryone))
     );
 
     const row3 = new ActionRowBuilder().addComponents(
