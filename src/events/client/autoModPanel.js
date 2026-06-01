@@ -4,6 +4,7 @@ const {
 } = require('discord.js');
 
 const AutoModSystem = require('../../models/AutoModSystem');
+
 const {
     createAutoModEmbed,
     createAutoModComponents
@@ -40,7 +41,7 @@ module.exports = {
 
         if (!data) {
             return interaction.reply({
-                content: '❌ AutoMod wurde noch nicht eingerichtet.',
+                content: '❌ AutoMod wurde noch nicht eingerichtet. Nutze zuerst `/setup-automod`.',
                 flags: 64
             });
         }
@@ -71,9 +72,13 @@ module.exports = {
             }
         }
 
+        data = await AutoModSystem.findOne({
+            guildId: interaction.guild.id
+        });
+
         return interaction.update({
             embeds: [createAutoModEmbed(data)],
-            components: createAutoModComponents()
+            components: createAutoModComponents(data)
         });
     }
 };
