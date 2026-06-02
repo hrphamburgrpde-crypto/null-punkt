@@ -102,7 +102,7 @@ module.exports = {
             .setTimestamp();
 
         const button = new ButtonBuilder()
-            .setCustomId('verify_start')
+            .setCustomId('verify_start_v2')
             .setLabel('Verifizieren')
             .setEmoji('✅')
             .setStyle(ButtonStyle.Success);

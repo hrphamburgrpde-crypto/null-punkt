@@ -16,28 +16,37 @@ module.exports = {
     name: Events.InteractionCreate,
 
     async execute(interaction) {
-        if (interaction.isButton() && interaction.customId === 'verify_start') {
+        if (interaction.isButton() && interaction.customId === 'verify_start_v2') {
             return handleVerifyButton(interaction);
         }
 
-        if (interaction.isModalSubmit() && interaction.customId === 'verify_captcha_modal') {
+        if (
+            interaction.isModalSubmit() &&
+            interaction.customId === `verify_captcha_modal_v2_${interaction.user.id}`
+        ) {
             return handleCaptchaSubmit(interaction);
         }
     }
 };
 
 async function handleVerifyButton(interaction) {
-    const data = await VerifySystem.findOne({ guildId: interaction.guild.id });
+    const data = await VerifySystem.findOne({
+        guildId: interaction.guild.id
+    });
 
     if (!data) {
-        return sendEmbed(interaction, '❌ Fehler', 'Verify System wurde nicht eingerichtet.', '#ff0000');
+        return sendEmbed(
+            interaction,
+            '❌ Fehler',
+            'Verify System wurde nicht eingerichtet.',
+            '#ff0000'
+        );
     }
 
-    const addRoleId = data.addRoleId || data.roleId || data.verifyRoleId;
-    const removeRoleId = data.removeRoleId || null;
-
-    const addRole = addRoleId ? interaction.guild.roles.cache.get(addRoleId) : null;
-    const removeRole = removeRoleId ? interaction.guild.roles.cache.get(removeRoleId) : null;
+    const addRole = interaction.guild.roles.cache.get(data.addRoleId);
+    const removeRole = data.removeRoleId
+        ? interaction.guild.roles.cache.get(data.removeRoleId)
+        : null;
 
     if (!addRole) {
         return sendEmbed(
@@ -49,18 +58,34 @@ async function handleVerifyButton(interaction) {
     }
 
     if (interaction.member.roles.cache.has(addRole.id)) {
-        return sendEmbed(interaction, '❌ Bereits verifiziert', 'Du bist bereits verifiziert.', '#ff0000');
+        return sendEmbed(
+            interaction,
+            '❌ Bereits verifiziert',
+            'Du bist bereits verifiziert.',
+            '#ff0000'
+        );
     }
 
     const roleCheck = checkBotRole(interaction, addRole, removeRole);
 
     if (!roleCheck.ok) {
-        return sendEmbed(interaction, '⬆️ Rollen Fehler', roleCheck.message, '#ffaa00');
+        return sendEmbed(
+            interaction,
+            '⬆️ Rollen Fehler',
+            roleCheck.message,
+            '#ffaa00'
+        );
     }
 
     if (!data.captchaEnabled) {
         await giveRoles(interaction, addRole, removeRole);
-        return sendEmbed(interaction, '✅ Verifiziert', `Du hast ${addRole} erhalten.`, '#00ff88');
+
+        return sendEmbed(
+            interaction,
+            '✅ Verifiziert',
+            `Du hast die Rolle ${addRole} erhalten.`,
+            '#00ff88'
+        );
     }
 
     const code = createCaptcha();
@@ -74,7 +99,7 @@ async function handleVerifyButton(interaction) {
     });
 
     const modal = new ModalBuilder()
-        .setCustomId('verify_captcha_modal')
+        .setCustomId(`verify_captcha_modal_v2_${interaction.user.id}`)
         .setTitle('Captcha Verifizierung');
 
     const input = new TextInputBuilder()
@@ -85,7 +110,9 @@ async function handleVerifyButton(interaction) {
         .setMinLength(code.length)
         .setMaxLength(code.length);
 
-    modal.addComponents(new ActionRowBuilder().addComponents(input));
+    modal.addComponents(
+        new ActionRowBuilder().addComponents(input)
+    );
 
     return interaction.showModal(modal);
 }
@@ -96,20 +123,34 @@ async function handleCaptchaSubmit(interaction) {
 
     if (!cache || Date.now() > cache.expiresAt) {
         captchaCache.delete(key);
-        return sendEmbed(interaction, '❌ Captcha abgelaufen', 'Bitte klicke nochmal auf Verifizieren.', '#ff0000');
+
+        return sendEmbed(
+            interaction,
+            '❌ Captcha abgelaufen',
+            'Bitte klicke nochmal auf **Verifizieren**.',
+            '#ff0000'
+        );
     }
 
     const input = interaction.fields.getTextInputValue('captcha_code');
 
     if (input.toUpperCase() !== cache.code.toUpperCase()) {
-        return sendEmbed(interaction, '❌ Falscher Code', 'Der eingegebene Captcha Code ist falsch.', '#ff0000');
+        return sendEmbed(
+            interaction,
+            '❌ Falscher Code',
+            'Der eingegebene Captcha Code ist falsch.',
+            '#ff0000'
+        );
     }
 
     const addRole = interaction.guild.roles.cache.get(cache.addRoleId);
-    const removeRole = cache.removeRoleId ? interaction.guild.roles.cache.get(cache.removeRoleId) : null;
+    const removeRole = cache.removeRoleId
+        ? interaction.guild.roles.cache.get(cache.removeRoleId)
+        : null;
 
     if (!addRole) {
         captchaCache.delete(key);
+
         return sendEmbed(
             interaction,
             '❌ Rolle wurde nicht gefunden',
@@ -120,19 +161,36 @@ async function handleCaptchaSubmit(interaction) {
 
     if (interaction.member.roles.cache.has(addRole.id)) {
         captchaCache.delete(key);
-        return sendEmbed(interaction, '❌ Bereits verifiziert', 'Du bist bereits verifiziert.', '#ff0000');
+
+        return sendEmbed(
+            interaction,
+            '❌ Bereits verifiziert',
+            'Du bist bereits verifiziert.',
+            '#ff0000'
+        );
     }
 
     const roleCheck = checkBotRole(interaction, addRole, removeRole);
 
     if (!roleCheck.ok) {
-        return sendEmbed(interaction, '⬆️ Rollen Fehler', roleCheck.message, '#ffaa00');
+        return sendEmbed(
+            interaction,
+            '⬆️ Rollen Fehler',
+            roleCheck.message,
+            '#ffaa00'
+        );
     }
 
     await giveRoles(interaction, addRole, removeRole);
+
     captchaCache.delete(key);
 
-    return sendEmbed(interaction, '✅ Verifiziert', `Du hast ${addRole} erhalten.`, '#00ff88');
+    return sendEmbed(
+        interaction,
+        '✅ Verifiziert',
+        `Du hast die Rolle ${addRole} erhalten.`,
+        '#00ff88'
+    );
 }
 
 function checkBotRole(interaction, addRole, removeRole) {
@@ -159,7 +217,9 @@ function checkBotRole(interaction, addRole, removeRole) {
         };
     }
 
-    return { ok: true };
+    return {
+        ok: true
+    };
 }
 
 async function giveRoles(interaction, addRole, removeRole) {
