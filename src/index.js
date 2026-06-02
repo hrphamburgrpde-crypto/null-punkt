@@ -3,6 +3,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const BotBan = require('./models/BotBan');
 
 const {
     Client,
@@ -111,6 +112,48 @@ function loadEvents(dir) {
 
 loadCommands(path.join(__dirname, 'commands'));
 loadEvents(path.join(__dirname, 'events'));
+
+client.on(Events.InteractionCreate, async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+
+    const botBan = await BotBan.findOne({
+        userId: interaction.user.id
+    });
+
+    if (botBan && interaction.user.id !== process.env.OWNER_ID) {
+        return interaction.reply({
+            content: '🚫 Du bist für diesen Bot gesperrt und kannst keine Commands benutzen.',
+            flags: 64
+        }).catch(() => {});
+    }
+
+    const command = client.commands.get(interaction.commandName);
+
+    if (!command) {
+        return interaction.reply({
+            content: '❌ Dieser Command wurde nicht gefunden.',
+            flags: 64
+        }).catch(() => {});
+    }
+
+    try {
+        await command.execute(interaction, client);
+    } catch (err) {
+        console.log(`❌ Fehler bei /${interaction.commandName}:`, err);
+
+        if (interaction.replied || interaction.deferred) {
+            return interaction.followUp({
+                content: '❌ Fehler beim Ausführen des Commands.',
+                flags: 64
+            }).catch(() => {});
+        }
+
+        return interaction.reply({
+            content: '❌ Fehler beim Ausführen des Commands.',
+            flags: 64
+        }).catch(() => {});
+    }
+});
 
 client.once(Events.ClientReady, () => {
     console.log(`✅ Eingeloggt als ${client.user.tag}`);
