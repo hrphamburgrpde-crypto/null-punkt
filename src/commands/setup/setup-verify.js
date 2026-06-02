@@ -30,7 +30,7 @@ module.exports = {
         .addBooleanOption(option =>
             option
                 .setName('captcha')
-                .setDescription('Soll Captcha aktiviert sein?')
+                .setDescription('Captcha aktivieren?')
                 .setRequired(true)
         )
         .addRoleOption(option =>
@@ -56,8 +56,8 @@ module.exports = {
 
         const channel = interaction.options.getChannel('kanal');
         const addRole = interaction.options.getRole('rolle_hinzufuegen');
-        const captcha = interaction.options.getBoolean('captcha');
         const removeRole = interaction.options.getRole('rolle_entfernen');
+        const captcha = interaction.options.getBoolean('captcha');
 
         await VerifySystem.findOneAndUpdate(
             { guildId: interaction.guild.id },

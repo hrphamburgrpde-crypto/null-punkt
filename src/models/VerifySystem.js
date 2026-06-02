@@ -3,12 +3,17 @@ const mongoose = require('mongoose');
 const schema = new mongoose.Schema({
     guildId: String,
     channelId: String,
-    verifyRole: String,
-    removeRole: String,
+    addRoleId: String,
+    removeRoleId: {
+        type: String,
+        default: null
+    },
     captchaEnabled: {
         type: Boolean,
         default: false
     }
 });
 
-module.exports = mongoose.model('VerifySystem', schema);
+module.exports =
+    mongoose.models.VerifySystem ||
+    mongoose.model('VerifySystem', schema);
