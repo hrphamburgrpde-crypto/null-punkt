@@ -78,19 +78,21 @@ function loadEvents(dir) {
 
         if (!file.endsWith('.js')) continue;
 
-        const event = require(filePath);
+        const loaded = require(filePath);
+const events = Array.isArray(loaded) ? loaded : [loaded];
 
-        if (!event.name || !event.execute) continue;
+for (const event of events) {
+    if (!event.name || !event.execute) continue;
 
-        if (event.once) {
-            client.once(event.name, (...args) => event.execute(...args, client));
-        } else {
-            client.on(event.name, (...args) => event.execute(...args, client));
-        }
-
-        console.log(`✅ Event geladen: ${event.name}`);
+    if (event.once) {
+        client.once(event.name, (...args) => event.execute(...args, client));
+    } else {
+        client.on(event.name, (...args) => event.execute(...args, client));
     }
+
+    console.log(`✅ Event geladen: ${event.name}`);
 }
+
 
 loadCommands(path.join(__dirname, 'commands'));
 loadEvents(path.join(__dirname, 'events'));
