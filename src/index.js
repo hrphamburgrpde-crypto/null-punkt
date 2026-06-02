@@ -52,11 +52,18 @@ function loadCommands(dir) {
 
         if (!file.endsWith('.js')) continue;
 
-        const command = require(filePath);
+        try {
+            const command = require(filePath);
 
-        if (command.data && command.execute) {
+            if (!command.data || !command.execute) {
+                console.log(`⚠️ Command übersprungen: ${file}`);
+                continue;
+            }
+
             client.commands.set(command.data.name, command);
             console.log(`✅ Command geladen: ${command.data.name}`);
+        } catch (err) {
+            console.log(`❌ Fehler bei Command ${file}:`, err);
         }
     }
 }
@@ -78,21 +85,29 @@ function loadEvents(dir) {
 
         if (!file.endsWith('.js')) continue;
 
-        const loaded = require(filePath);
-const events = Array.isArray(loaded) ? loaded : [loaded];
+        try {
+            const loaded = require(filePath);
+            const events = Array.isArray(loaded) ? loaded : [loaded];
 
-for (const event of events) {
-    if (!event.name || !event.execute) continue;
+            for (const event of events) {
+                if (!event.name || !event.execute) {
+                    console.log(`⚠️ Event übersprungen: ${file}`);
+                    continue;
+                }
 
-    if (event.once) {
-        client.once(event.name, (...args) => event.execute(...args, client));
-    } else {
-        client.on(event.name, (...args) => event.execute(...args, client));
+                if (event.once) {
+                    client.once(event.name, (...args) => event.execute(...args, client));
+                } else {
+                    client.on(event.name, (...args) => event.execute(...args, client));
+                }
+
+                console.log(`✅ Event geladen: ${event.name}`);
+            }
+        } catch (err) {
+            console.log(`❌ Fehler bei Event ${file}:`, err);
+        }
     }
-
-    console.log(`✅ Event geladen: ${event.name}`);
 }
-
 
 loadCommands(path.join(__dirname, 'commands'));
 loadEvents(path.join(__dirname, 'events'));
