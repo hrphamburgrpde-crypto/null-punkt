@@ -8,7 +8,7 @@ const {
     ButtonBuilder,
     ButtonStyle
 } = require('discord.js');
-
+const BotBan = require('../../models/BotBan');
 const Warn =
     require('../../models/Warn');
 
@@ -27,12 +27,14 @@ module.exports = {
 
         if (interaction.isChatInputCommand()) {
 
-            const command =
-                client.commands.get(
-                    interaction.commandName
-                );
+    const botBan = await BotBan.findOne({
+        userId: interaction.user.id
+    });
 
-            if (!command) return;
+    if (botBan && interaction.user.id !== process.env.OWNER_ID) {
+        return interaction.reply({
+            content: '🚫 Du bist für diesen Bot gesperrt und kannst keine Commands benutzen.',
+            flags: 64
 
             try {
 
