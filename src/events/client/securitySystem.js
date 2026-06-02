@@ -7,46 +7,42 @@ const {
 
 const SecuritySystem = require('../../models/SecuritySystem');
 
-module.exports = [
-    {
-        name: Events.ChannelCreate,
-        async execute(channel) {
+module.exports = {
+    name: Events.ClientReady,
+    once: true,
+
+    async execute(client) {
+        console.log('✅ Security System gestartet');
+
+        client.on(Events.ChannelCreate, async channel => {
             if (!channel.guild) return;
 
             const executor = await getExecutor(channel.guild, AuditLogEvent.ChannelCreate);
             await handleSecurity(channel.guild, executor, 'Kanal erstellt', channel.name, async () => {
                 await channel.delete('Admin Lock - unerlaubter Kanal erstellt').catch(() => {});
             });
-        }
-    },
-    {
-        name: Events.ChannelDelete,
-        async execute(channel) {
+        });
+
+        client.on(Events.ChannelDelete, async channel => {
             if (!channel.guild) return;
 
             const executor = await getExecutor(channel.guild, AuditLogEvent.ChannelDelete);
             await handleSecurity(channel.guild, executor, 'Kanal gelöscht', channel.name);
-        }
-    },
-    {
-        name: Events.RoleCreate,
-        async execute(role) {
+        });
+
+        client.on(Events.RoleCreate, async role => {
             const executor = await getExecutor(role.guild, AuditLogEvent.RoleCreate);
             await handleSecurity(role.guild, executor, 'Rolle erstellt', role.name, async () => {
                 await role.delete('Admin Lock - unerlaubte Rolle erstellt').catch(() => {});
             });
-        }
-    },
-    {
-        name: Events.RoleDelete,
-        async execute(role) {
+        });
+
+        client.on(Events.RoleDelete, async role => {
             const executor = await getExecutor(role.guild, AuditLogEvent.RoleDelete);
             await handleSecurity(role.guild, executor, 'Rolle gelöscht', role.name);
-        }
-    },
-    {
-        name: Events.GuildMemberUpdate,
-        async execute(oldMember, newMember) {
+        });
+
+        client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
             const oldAdmin = oldMember.permissions.has(PermissionsBitField.Flags.Administrator);
             const newAdmin = newMember.permissions.has(PermissionsBitField.Flags.Administrator);
 
@@ -70,9 +66,9 @@ module.exports = [
                     }
                 );
             }
-        }
+        });
     }
-];
+};
 
 async function getExecutor(guild, type) {
     const logs = await guild.fetchAuditLogs({
