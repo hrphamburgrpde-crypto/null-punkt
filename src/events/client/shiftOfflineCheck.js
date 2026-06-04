@@ -12,68 +12,95 @@ module.exports = {
     name: Events.PresenceUpdate,
 
     async execute(oldPresence, newPresence) {
-        if (!newPresence?.guild) return;
+        const presence = newPresence || oldPresence;
+        if (!presence?.guild || !presence?.userId) return;
+
+        const guild = presence.guild;
+        const userId = presence.userId;
 
         const data = await ShiftSystem.findOne({
-            guildId: newPresence.guild.id
+            guildId: guild.id
         });
 
         if (!data || !data.antiOfflineFarming) return;
 
-        const member = newPresence.member;
+        const key = `${guild.id}_${userId}`;
 
-        if (!member) return;
+        const status = newPresence?.status || 'offline';
 
-        const dutyRole = newPresence.guild.roles.cache.get(data.dutyRoleId);
-
-        if (!dutyRole) return;
-
-        const key = `${newPresence.guild.id}_${member.id}`;
-
-        if (newPresence.status !== 'offline') {
+        if (status !== 'offline') {
             if (offlineTimers.has(key)) {
                 clearTimeout(offlineTimers.get(key));
                 offlineTimers.delete(key);
             }
-
             return;
         }
 
-        if (!member.roles.cache.has(dutyRole.id)) return;
+        const shiftTime = await ShiftTime.findOne({
+            guildId: guild.id,
+            userId,
+            activeSince: { $ne: null }
+        });
+
+        if (!shiftTime) return;
         if (offlineTimers.has(key)) return;
 
         const timer = setTimeout(async () => {
             try {
-                const refreshedMember = await newPresence.guild.members.fetch(member.id);
+                const freshShift = await ShiftTime.findOne({
+                    guildId: guild.id,
+                    userId,
+                    activeSince: { $ne: null }
+                });
 
-                if (!refreshedMember.roles.cache.has(dutyRole.id)) {
+                if (!freshShift) {
                     offlineTimers.delete(key);
                     return;
                 }
 
-                const workedMs = await stopTime(newPresence.guild.id, member.id);
+                const member = await guild.members.fetch(userId).catch(() => null);
 
-                await refreshedMember.roles.remove(dutyRole).catch(() => {});
+                if (!member) {
+                    offlineTimers.delete(key);
+                    return;
+                }
 
+                const dutyRole = guild.roles.cache.get(data.dutyRoleId);
                 const offDutyRole = data.offDutyRoleId
-                    ? newPresence.guild.roles.cache.get(data.offDutyRoleId)
+                    ? guild.roles.cache.get(data.offDutyRoleId)
                     : null;
 
-                if (offDutyRole) {
-                    await refreshedMember.roles.add(offDutyRole).catch(() => {});
+                if (!dutyRole || !member.roles.cache.has(dutyRole.id)) {
+                    freshShift.activeSince = null;
+                    await freshShift.save();
+
+                    offlineTimers.delete(key);
+                    return;
+                }
+
+                const workedMs = Date.now() - new Date(freshShift.activeSince).getTime();
+
+                freshShift.totalMs += workedMs;
+                freshShift.activeSince = null;
+                await freshShift.save();
+
+                await member.roles.remove(dutyRole).catch(() => {});
+
+                if (offDutyRole && !member.roles.cache.has(offDutyRole.id)) {
+                    await member.roles.add(offDutyRole).catch(() => {});
                 }
 
                 const embed = new EmbedBuilder()
                     .setColor('#ffaa00')
                     .setTitle('📡 Automatisch ausgecheckt')
-                    .setDescription(`${refreshedMember.user} wurde nach 5 Minuten Offline automatisch ausgecheckt.`)
+                    .setDescription(`${member.user} wurde nach 5 Minuten Offline automatisch ausgecheckt.`)
                     .addFields({
                         name: '⏱️ Arbeitszeit',
                         value: `\`${formatDuration(workedMs)}\``
                     })
                     .setTimestamp();
 
-                const logChannel = newPresence.guild.channels.cache.get(data.logChannelId);
+                const logChannel = guild.channels.cache.get(data.logChannelId);
 
                 if (logChannel) {
                     await logChannel.send({
@@ -81,7 +108,7 @@ module.exports = {
                     }).catch(() => {});
                 }
 
-                await refreshedMember.send({
+                await member.send({
                     embeds: [
                         new EmbedBuilder()
                             .setColor('#ffaa00')
@@ -105,24 +132,6 @@ module.exports = {
         offlineTimers.set(key, timer);
     }
 };
-
-async function stopTime(guildId, userId) {
-    const shiftTime = await ShiftTime.findOne({
-        guildId,
-        userId
-    });
-
-    if (!shiftTime || !shiftTime.activeSince) return 0;
-
-    const workedMs = Date.now() - new Date(shiftTime.activeSince).getTime();
-
-    shiftTime.totalMs += workedMs;
-    shiftTime.activeSince = null;
-
-    await shiftTime.save();
-
-    return workedMs;
-}
 
 function formatDuration(ms) {
     const seconds = Math.floor(ms / 1000) % 60;
