@@ -12,6 +12,7 @@ const {
 const BotBan = require('../../models/BotBan');
 const Warn = require('../../models/Warn');
 const WarnAppealChannel = require('../../models/WarnAppealChannel');
+const { handleBroadcastModal } = require('../../commands/utility/broadcast');
 
 module.exports = {
     name: Events.InteractionCreate,
@@ -216,6 +217,8 @@ module.exports = {
         //
 
         if (interaction.isModalSubmit()) {
+if (await handleBroadcastModal(interaction)) return;
+
             //
             // WARN APPEAL MODAL
             //
