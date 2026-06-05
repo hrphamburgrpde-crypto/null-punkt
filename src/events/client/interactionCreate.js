@@ -217,7 +217,12 @@ module.exports = {
         //
 
         if (interaction.isModalSubmit()) {
-if (await handleBroadcastModal(interaction)) return;
+
+    if (await handleBroadcastModal(interaction)) return;
+
+    //
+    // WARN APPEAL MODAL
+    //
 
             //
             // WARN APPEAL MODAL
