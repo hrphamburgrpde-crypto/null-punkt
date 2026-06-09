@@ -1,41 +1,74 @@
 const {
     SlashCommandBuilder,
     PermissionFlagsBits
-} = require('discord.js');
+} = require("discord.js");
 
-const TeamDashboard = require('../../models/TeamDashboard');
-const PremiumGuild = require('../../models/PremiumGuild');
-
+const TeamDashboard = require("../../models/TeamDashboard");
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('setup-team-dashboard')
-        .setDescription('Richtet das Team Dashboard ein')
+        .setName("setup-team-dashboard")
+        .setDescription("Richtet das Team Dashboard ein")
 
         .addRoleOption(option =>
             option
-                .setName('manager_rolle')
-                .setDescription('Manager Rolle')
+                .setName("dashboard_rolle")
+                .setDescription("Wer darf das Dashboard nutzen")
                 .setRequired(true)
         )
 
         .addRoleOption(option =>
             option
-                .setName('moderator_rolle')
-                .setDescription('Moderator Rolle')
+                .setName("manager_rolle")
+                .setDescription("Manager Rolle")
                 .setRequired(true)
         )
 
         .addRoleOption(option =>
             option
-                .setName('support_rolle')
-                .setDescription('Support Rolle')
+                .setName("support_rolle")
+                .setDescription("Support Rolle")
+                .setRequired(true)
+        )
+
+        .addRoleOption(option =>
+            option
+                .setName("moderator_rolle")
+                .setDescription("Moderator Rolle")
+                .setRequired(true)
+        )
+
+        .addRoleOption(option =>
+            option
+                .setName("admin_rolle")
+                .setDescription("Administrator Rolle")
                 .setRequired(true)
         )
 
         .addChannelOption(option =>
             option
-                .setName('log_kanal')
-                .setDescription('Team Log Kanal')
+                .setName("uprank_kanal")
+                .setDescription("Uprank Logs")
+                .setRequired(true)
+        )
+
+        .addChannelOption(option =>
+            option
+                .setName("downrank_kanal")
+                .setDescription("Downrank Logs")
+                .setRequired(true)
+        )
+
+        .addChannelOption(option =>
+            option
+                .setName("warn_kanal")
+                .setDescription("Warn Logs")
+                .setRequired(true)
+        )
+
+        .addChannelOption(option =>
+            option
+                .setName("kick_kanal")
+                .setDescription("Kick Logs")
                 .setRequired(true)
         )
 
@@ -45,24 +78,32 @@ module.exports = {
 
     async execute(interaction) {
 
-        const managerRole =
-            interaction.options.getRole('manager_rolle');
+        const dashboardRole =
+            interaction.options.getRole("dashboard_rolle");
 
-        const moderatorRole =
-            interaction.options.getRole('moderator_rolle');
+        const managerRole =
+            interaction.options.getRole("manager_rolle");
 
         const supportRole =
-            interaction.options.getRole('support_rolle');
+            interaction.options.getRole("support_rolle");
 
-        const logChannel =
-            interaction.options.getChannel('log_kanal');
+        const moderatorRole =
+            interaction.options.getRole("moderator_rolle");
 
-        const premium = await PremiumGuild.findOne({
-            guildId: interaction.guild.id,
-            active: true
-        });
+        const adminRole =
+            interaction.options.getRole("admin_rolle");
 
-        const maxMembers = premium ? 999999 : 100;
+        const uprankChannel =
+            interaction.options.getChannel("uprank_kanal");
+
+        const downrankChannel =
+            interaction.options.getChannel("downrank_kanal");
+
+        const warnChannel =
+            interaction.options.getChannel("warn_kanal");
+
+        const kickChannel =
+            interaction.options.getChannel("kick_kanal");
 
         await TeamDashboard.findOneAndUpdate(
             {
@@ -71,23 +112,17 @@ module.exports = {
             {
                 guildId: interaction.guild.id,
 
-                managerRoles: [
-                    managerRole.id
-                ],
+                dashboardRole: dashboardRole.id,
+                managerRole: managerRole.id,
 
-                moderatorRoles: [
-                    moderatorRole.id
-                ],
+                supportRole: supportRole.id,
+                moderatorRole: moderatorRole.id,
+                adminRole: adminRole.id,
 
-                supportRoles: [
-                    supportRole.id
-                ],
-
-                logChannel: logChannel.id,
-
-                premium: !!premium,
-
-                maxMembers
+                uprankChannel: uprankChannel.id,
+                downrankChannel: downrankChannel.id,
+                warnChannel: warnChannel.id,
+                kickChannel: kickChannel.id
             },
             {
                 upsert: true,
@@ -95,33 +130,34 @@ module.exports = {
             }
         );
 
-        await interaction.reply({
+        return interaction.reply({
             embeds: [
                 {
-                    color: 0x00ff88,
-                    title: '✅ Team Dashboard eingerichtet',
+                    color: 0x5865F2,
+                    title: "✅ Team Dashboard eingerichtet",
+                    description:
+                        "Das Team Dashboard wurde erfolgreich konfiguriert.",
+
                     fields: [
                         {
-                            name: '👑 Manager',
+                            name: "Dashboard Rolle",
+                            value: `<@&${dashboardRole.id}>`
+                        },
+                        {
+                            name: "Manager Rolle",
                             value: `<@&${managerRole.id}>`
                         },
                         {
-                            name: '🛡 Moderator',
-                            value: `<@&${moderatorRole.id}>`
-                        },
-                        {
-                            name: '🎫 Support',
+                            name: "Support Rolle",
                             value: `<@&${supportRole.id}>`
                         },
                         {
-                            name: '📄 Log Kanal',
-                            value: `<#${logChannel.id}>`
+                            name: "Moderator Rolle",
+                            value: `<@&${moderatorRole.id}>`
                         },
                         {
-                            name: '👥 Team Limit',
-                            value: premium
-                                ? '∞ (Premium)'
-                                : '100'
+                            name: "Admin Rolle",
+                            value: `<@&${adminRole.id}>`
                         }
                     ]
                 }

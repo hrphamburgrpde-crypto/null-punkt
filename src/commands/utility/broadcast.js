@@ -14,26 +14,27 @@ const PremiumGuild = require('../../models/PremiumGuild');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('broadcast')
-        .setDescription('Bot Owner: Sendet eine Broadcast Nachricht')
+        .setDescription('Bot Owner Broadcast')
         .addStringOption(option =>
             option
                 .setName('ziel')
-                .setDescription('Wohin soll gesendet werden?')
+                .setDescription('Broadcast Ziel')
                 .setRequired(true)
                 .addChoices(
                     { name: 'Alle Server', value: 'all' },
-                    { name: 'Nur Premium Server', value: 'premium' },
+                    { name: 'Premium Server', value: 'premium' },
                     { name: 'Einzelner Server', value: 'single' }
                 )
         )
         .addStringOption(option =>
             option
                 .setName('serverid')
-                .setDescription('Nur bei einzelner Server: Server ID')
+                .setDescription('Server ID')
                 .setRequired(false)
         ),
 
     async execute(interaction) {
+
         if (interaction.user.id !== process.env.OWNER_ID) {
             return interaction.reply({
                 content: '❌ Nur der Bot Owner darf diesen Command benutzen.',
@@ -46,48 +47,41 @@ module.exports = {
 
         if (target === 'single' && serverId === 'none') {
             return interaction.reply({
-                content: '❌ Bitte gib bei `Einzelner Server` auch eine Server ID an.',
+                content: '❌ Bitte gib eine Server ID an.',
                 flags: 64
             });
         }
 
         const modal = new ModalBuilder()
-            .setCustomId(`broadcast_modal_${target}_${serverId}`)
-            .setTitle('Broadcast erstellen');
+            .setCustomId(`broadcast_${target}_${serverId}`)
+            .setTitle('Broadcast');
 
-        const titleInput = new TextInputBuilder()
+        const title = new TextInputBuilder()
             .setCustomId('title')
             .setLabel('Titel')
             .setStyle(TextInputStyle.Short)
-            .setRequired(true)
-            .setMaxLength(256)
-            .setPlaceholder('z.B. Null Punkt Update');
+            .setRequired(true);
 
-        const messageInput = new TextInputBuilder()
+        const message = new TextInputBuilder()
             .setCustomId('message')
             .setLabel('Nachricht')
             .setStyle(TextInputStyle.Paragraph)
-            .setRequired(true)
-            .setMaxLength(3500)
-            .setPlaceholder('Schreibe hier deine Broadcast Nachricht...');
+            .setRequired(true);
 
         modal.addComponents(
-            new ActionRowBuilder().addComponents(titleInput),
-            new ActionRowBuilder().addComponents(messageInput)
+            new ActionRowBuilder().addComponents(title),
+            new ActionRowBuilder().addComponents(message)
         );
 
         return interaction.showModal(modal);
     }
 };
 
-module.exports.handleBroadcastModal = async function handleBroadcastModal(interaction) {
-    if (!interaction.customId.startsWith('broadcast_modal_')) return false;
+module.exports.handleBroadcastModal = async function(interaction) {
+
+    if (!interaction.customId.startsWith('broadcast_')) return false;
 
     if (interaction.user.id !== process.env.OWNER_ID) {
-        await interaction.reply({
-            content: '❌ Nur der Bot Owner darf Broadcasts senden.',
-            flags: 64
-        });
         return true;
     }
 
@@ -95,15 +89,17 @@ module.exports.handleBroadcastModal = async function handleBroadcastModal(intera
         flags: 64
     });
 
-    const raw = interaction.customId.replace('broadcast_modal_', '');
-    const [target, ...serverParts] = raw.split('_');
-    const serverId = serverParts.join('_');
+    const raw = interaction.customId.replace('broadcast_', '');
+
+    const [target, ...rest] = raw.split('_');
+
+    const serverId = rest.join('_');
 
     const title = interaction.fields.getTextInputValue('title');
     const message = interaction.fields.getTextInputValue('message');
 
     const embed = new EmbedBuilder()
-        .setColor('#00aaff')
+        .setColor('#0099ff')
         .setTitle(title)
         .setDescription(message)
         .setFooter({
@@ -119,26 +115,27 @@ module.exports.handleBroadcastModal = async function handleBroadcastModal(intera
 
     if (target === 'single') {
         const guild = interaction.client.guilds.cache.get(serverId);
+
         if (guild) guilds = [guild];
     }
 
     if (target === 'premium') {
+
         const premiumGuilds = await PremiumGuild.find({
             active: true
         });
 
-        const premiumIds = premiumGuilds
-            .filter(p => p.expiresAt && Date.now() < new Date(p.expiresAt).getTime())
-            .map(p => p.guildId);
+        const ids = premiumGuilds.map(g => g.guildId);
 
         guilds = [...interaction.client.guilds.cache.values()]
-            .filter(guild => premiumIds.includes(guild.id));
+            .filter(g => ids.includes(g.id));
     }
 
     let success = 0;
     let failed = 0;
 
     for (const guild of guilds) {
+
         const channel = findBestChannel(guild);
 
         if (!channel) {
@@ -146,51 +143,59 @@ module.exports.handleBroadcastModal = async function handleBroadcastModal(intera
             continue;
         }
 
-        await channel.send({
-            embeds: [embed]
-        }).then(() => {
-            success++;
-        }).catch(() => {
-            failed++;
-        });
+        try {
 
-        await wait(750);
+            await channel.send({
+                embeds: [embed]
+            });
+
+            success++;
+
+        } catch {
+
+            failed++;
+
+        }
+
+        await wait(500);
     }
 
-    return interaction.editReply({
+    await interaction.editReply({
         content:
-            `✅ Broadcast abgeschlossen.\n\n` +
-            `📨 Erfolgreich: \`${success}\`\n` +
-            `❌ Fehlgeschlagen: \`${failed}\`\n` +
-            `🎯 Ziel: \`${target}\``
+            `✅ Broadcast abgeschlossen\n\n` +
+            `📨 Erfolgreich: ${success}\n` +
+            `❌ Fehlgeschlagen: ${failed}`
     });
+
+    return true;
 };
 
 function findBestChannel(guild) {
+
     const me = guild.members.me;
+
     if (!me) return null;
 
-    const names = [
+    const textChannels = guild.channels.cache
+        .filter(channel =>
+            channel.type === ChannelType.GuildText &&
+            channel.permissionsFor(me)?.has([
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.EmbedLinks
+            ])
+        );
+
+    const preferredNames = [
         'announcements',
         'ankündigungen',
         'ankundigungen',
         'updates',
-        'news',
-        'general',
-        'allgemein',
-        'chat'
+        'news'
     ];
 
-    const textChannels = guild.channels.cache.filter(channel =>
-        channel.type === ChannelType.GuildText &&
-        channel.permissionsFor(me)?.has([
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.EmbedLinks
-        ])
-    );
+    for (const name of preferredNames) {
 
-    for (const name of names) {
         const found = textChannels.find(channel =>
             channel.name.toLowerCase().includes(name)
         );
@@ -199,7 +204,7 @@ function findBestChannel(guild) {
     }
 
     return textChannels
-        .sort((a, b) => a.rawPosition - b.rawPosition)
+        .sort((a, b) => a.position - b.position)
         .first() || null;
 }
 
