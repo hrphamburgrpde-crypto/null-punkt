@@ -1,4 +1,6 @@
 require("dotenv").config();
+const membersRoute = require("./routes/members");
+app.use("/api/members", membersRoute);
 
 const express = require("express");
 const cors = require("cors");

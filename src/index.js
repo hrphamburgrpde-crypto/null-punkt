@@ -125,5 +125,6 @@ process.on('unhandledRejection', err => {
 process.on('uncaughtException', err => {
     console.log('❌ Uncaught Exception:', err);
 });
+module.exports = client;
 
 client.login(process.env.TOKEN);

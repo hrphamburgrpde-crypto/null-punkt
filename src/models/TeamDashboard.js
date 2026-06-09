@@ -12,9 +12,7 @@ module.exports = mongoose.model(
         dashboardRole: String,
         managerRole: String,
 
-        supportRole: String,
-        moderatorRole: String,
-        adminRole: String,
+        careerRoles: [String],
 
         uprankChannel: String,
         downrankChannel: String,

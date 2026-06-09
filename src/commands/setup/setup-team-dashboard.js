@@ -4,6 +4,7 @@ const {
 } = require("discord.js");
 
 const TeamDashboard = require("../../models/TeamDashboard");
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("setup-team-dashboard")
@@ -12,7 +13,7 @@ module.exports = {
         .addRoleOption(option =>
             option
                 .setName("dashboard_rolle")
-                .setDescription("Wer darf das Dashboard nutzen")
+                .setDescription("Dashboard Zugriff")
                 .setRequired(true)
         )
 
@@ -20,27 +21,6 @@ module.exports = {
             option
                 .setName("manager_rolle")
                 .setDescription("Manager Rolle")
-                .setRequired(true)
-        )
-
-        .addRoleOption(option =>
-            option
-                .setName("support_rolle")
-                .setDescription("Support Rolle")
-                .setRequired(true)
-        )
-
-        .addRoleOption(option =>
-            option
-                .setName("moderator_rolle")
-                .setDescription("Moderator Rolle")
-                .setRequired(true)
-        )
-
-        .addRoleOption(option =>
-            option
-                .setName("admin_rolle")
-                .setDescription("Administrator Rolle")
                 .setRequired(true)
         )
 
@@ -72,6 +52,15 @@ module.exports = {
                 .setRequired(true)
         )
 
+        .addStringOption(option =>
+            option
+                .setName("laufbahn_rollen")
+                .setDescription(
+                    "Mit Komma trennen (z.B. Support,Moderator,Admin)"
+                )
+                .setRequired(true)
+        )
+
         .setDefaultMemberPermissions(
             PermissionFlagsBits.Administrator
         ),
@@ -83,15 +72,6 @@ module.exports = {
 
         const managerRole =
             interaction.options.getRole("manager_rolle");
-
-        const supportRole =
-            interaction.options.getRole("support_rolle");
-
-        const moderatorRole =
-            interaction.options.getRole("moderator_rolle");
-
-        const adminRole =
-            interaction.options.getRole("admin_rolle");
 
         const uprankChannel =
             interaction.options.getChannel("uprank_kanal");
@@ -105,6 +85,12 @@ module.exports = {
         const kickChannel =
             interaction.options.getChannel("kick_kanal");
 
+        const careerRoles =
+            interaction.options
+                .getString("laufbahn_rollen")
+                .split(",")
+                .map(role => role.trim());
+
         await TeamDashboard.findOneAndUpdate(
             {
                 guildId: interaction.guild.id
@@ -115,9 +101,7 @@ module.exports = {
                 dashboardRole: dashboardRole.id,
                 managerRole: managerRole.id,
 
-                supportRole: supportRole.id,
-                moderatorRole: moderatorRole.id,
-                adminRole: adminRole.id,
+                careerRoles,
 
                 uprankChannel: uprankChannel.id,
                 downrankChannel: downrankChannel.id,
@@ -130,38 +114,20 @@ module.exports = {
             }
         );
 
-        return interaction.reply({
+        await interaction.reply({
             embeds: [
                 {
                     color: 0x5865F2,
                     title: "✅ Team Dashboard eingerichtet",
-                    description:
-                        "Das Team Dashboard wurde erfolgreich konfiguriert.",
-
                     fields: [
                         {
-                            name: "Dashboard Rolle",
-                            value: `<@&${dashboardRole.id}>`
-                        },
-                        {
-                            name: "Manager Rolle",
-                            value: `<@&${managerRole.id}>`
-                        },
-                        {
-                            name: "Support Rolle",
-                            value: `<@&${supportRole.id}>`
-                        },
-                        {
-                            name: "Moderator Rolle",
-                            value: `<@&${moderatorRole.id}>`
-                        },
-                        {
-                            name: "Admin Rolle",
-                            value: `<@&${adminRole.id}>`
+                            name: "📋 Laufbahn Rollen",
+                            value: careerRoles.join("\n")
                         }
                     ]
                 }
-            ]
+            ],
+            ephemeral: true
         });
     }
 };
