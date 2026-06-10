@@ -1,21 +1,25 @@
-export default function Team() {
-const [members, setMembers] = useState([]);
 import { useEffect, useState } from "react";
+
+export default function Team() {
+
+  const [members, setMembers] = useState([]);
+
   useEffect(() => {
 
-  fetch(
-    "http://localhost:3000/api/team/1511348767733842021"
-  )
-    .then(res => res.json())
-    .then(data => {
+    fetch(
+      "http://localhost:3000/api/team/1511348767733842021"
+    )
+      .then(res => res.json())
+      .then(data => {
 
-      if (data.success) {
-        setMembers(data.members);
-      }
+        if (data.success) {
+          setMembers(data.members);
+        }
 
-    });
+      })
+      .catch(console.error);
 
-}, []);
+  }, []);
 
   return (
     <>
@@ -38,46 +42,32 @@ import { useEffect, useState } from "react";
           marginBottom: "25px"
         }}
       >
-        <StatCard title="42" subtitle="Teammitglieder" />
-        <StatCard title="3" subtitle="Manager" />
-        <StatCard title="12" subtitle="Aktionen heute" />
+        <StatCard
+          title={members.length}
+          subtitle="Teammitglieder"
+        />
+
+        <StatCard
+          title="Team"
+          subtitle="Discord Mitglieder"
+        />
+
+        <StatCard
+          title="Live"
+          subtitle="Discord API"
+        />
       </div>
-
-      <button
-        style={{
-          background: "#2563eb",
-          border: "none",
-          color: "white",
-          padding: "12px 20px",
-          borderRadius: "10px",
-          cursor: "pointer",
-          marginBottom: "25px"
-        }}
-      >
-        ➕ Teammitglied hinzufügen
-      </button>
-
-      <input
-        placeholder="Teammitglied suchen..."
-        style={{
-          width: "100%",
-          padding: "12px",
-          borderRadius: "12px",
-          border: "none",
-          background: "#111827",
-          color: "white",
-          marginBottom: "25px"
-        }}
-      />
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))",
+          gridTemplateColumns:
+            "repeat(auto-fill,minmax(320px,1fr))",
           gap: "20px"
         }}
       >
         {members.map(member => (
+
           <div
             key={member.id}
             style={{
@@ -86,6 +76,7 @@ import { useEffect, useState } from "react";
               padding: "20px"
             }}
           >
+
             <div
               style={{
                 display: "flex",
@@ -93,6 +84,7 @@ import { useEffect, useState } from "react";
                 gap: "15px"
               }}
             >
+
               <img
                 src={member.avatar}
                 alt={member.username}
@@ -104,24 +96,25 @@ import { useEffect, useState } from "react";
               />
 
               <div>
-                <h3>{member.username}</h3>
+
+                <h3>
+                  {member.username}
+                </h3>
 
                 <span
                   style={{
-                    background:
-                      member.roles?.[0]?.name || "Keine Rolle" === "Manager"
-                        ? "#f59e0b"
-                        : member.roles?.[0]?.name || "Keine Rolle" === "Moderator"
-                        ? "#2563eb"
-                        : "#10b981",
+                    background: "#2563eb",
                     padding: "4px 10px",
                     borderRadius: "999px",
                     fontSize: "12px"
                   }}
                 >
-                  {member.role}
+                  {member.roles?.[0]?.name ||
+                    "Keine Rolle"}
                 </span>
+
               </div>
+
             </div>
 
             <div
@@ -130,26 +123,41 @@ import { useEffect, useState } from "react";
                 color: "#9ca3af"
               }}
             >
-              Teamwarns: {member.warns}
+              Rollen:
+              {" "}
+              {member.roles?.length || 0}
             </div>
 
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(2,1fr)",
+                gridTemplateColumns:
+                  "repeat(2,1fr)",
                 gap: "10px",
                 marginTop: "20px"
               }}
             >
-              <button style={greenBtn}>⬆️ Uprank</button>
 
-              <button style={orangeBtn}>⬇️ Downrank</button>
+              <button style={greenBtn}>
+                ⬆️ Uprank
+              </button>
 
-              <button style={yellowBtn}>⚠️ Warn</button>
+              <button style={orangeBtn}>
+                ⬇️ Downrank
+              </button>
 
-              <button style={redBtn}>🚫 Entfernen</button>
+              <button style={yellowBtn}>
+                ⚠️ Warn
+              </button>
+
+              <button style={redBtn}>
+                🚫 Entfernen
+              </button>
+
             </div>
+
           </div>
+
         ))}
       </div>
     </>
@@ -157,6 +165,7 @@ import { useEffect, useState } from "react";
 }
 
 function StatCard({ title, subtitle }) {
+
   return (
     <div
       style={{
@@ -170,6 +179,7 @@ function StatCard({ title, subtitle }) {
       <p>{subtitle}</p>
     </div>
   );
+
 }
 
 const greenBtn = {
