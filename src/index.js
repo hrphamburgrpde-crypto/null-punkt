@@ -6,7 +6,6 @@ const mongoose = require('mongoose');
 const express = require("express");
 const cors = require("cors");
 const BotBan = require('./models/BotBan');
-import { useEffect, useState } from "react";
 const [members, setMembers] = useState([]);
 
 useEffect(() => {
