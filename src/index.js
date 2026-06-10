@@ -6,7 +6,6 @@ const mongoose = require('mongoose');
 const express = require("express");
 const cors = require("cors");
 const BotBan = require('./models/BotBan');
-const [members, setMembers] = useState([]);
 
 useEffect(() => {
 
