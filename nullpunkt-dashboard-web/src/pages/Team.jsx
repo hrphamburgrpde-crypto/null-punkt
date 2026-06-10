@@ -3,6 +3,13 @@ import { useEffect, useState } from "react";
 export default function Team() {
 
   const [members, setMembers] = useState([]);
+  const [careers, setCareers] = useState([]);
+
+  const [selectedMember, setSelectedMember] =
+    useState(null);
+
+  const [selectedRole, setSelectedRole] =
+    useState("");
 
   useEffect(() => {
 
@@ -14,6 +21,19 @@ export default function Team() {
 
         if (data.success) {
           setMembers(data.members);
+        }
+
+      })
+      .catch(console.error);
+
+    fetch(
+      "http://localhost:3000/api/career/1511348767733842021"
+    )
+      .then(res => res.json())
+      .then(data => {
+
+        if (data.success) {
+          setCareers(data.careers);
         }
 
       })
@@ -48,8 +68,8 @@ export default function Team() {
         />
 
         <StatCard
-          title="Team"
-          subtitle="Discord Mitglieder"
+          title={careers.length}
+          subtitle="Laufbahn Rollen"
         />
 
         <StatCard
@@ -138,7 +158,12 @@ export default function Team() {
               }}
             >
 
-              <button style={greenBtn}>
+              <button
+                style={greenBtn}
+                onClick={() => {
+                  setSelectedMember(member);
+                }}
+              >
                 ⬆️ Uprank
               </button>
 
@@ -160,11 +185,119 @@ export default function Team() {
 
         ))}
       </div>
+
+      {selectedMember && (
+
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background:
+              "rgba(0,0,0,0.8)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center"
+          }}
+        >
+
+          <div
+            style={{
+              background: "#111827",
+              padding: "25px",
+              borderRadius: "15px",
+              width: "500px"
+            }}
+          >
+
+            <h2>⬆️ Teammitglied befördern</h2>
+
+            <p>
+              Mitglied:
+              {" "}
+              {selectedMember.username}
+            </p>
+
+            <p>
+              Aktuelle Rolle:
+              {" "}
+              {selectedMember.roles?.[0]?.name ||
+                "Keine Rolle"}
+            </p>
+
+            <select
+              value={selectedRole}
+              onChange={(e) =>
+                setSelectedRole(
+                  e.target.value
+                )
+              }
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginTop: "15px"
+              }}
+            >
+
+              <option value="">
+                Neue Rolle auswählen
+              </option>
+
+              {careers.map(role => (
+
+                <option
+                  key={role.roleId}
+                  value={role.roleId}
+                >
+                  {role.roleName}
+                </option>
+
+              ))}
+
+            </select>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                marginTop: "20px"
+              }}
+            >
+
+              <button style={greenBtn}>
+                Befördern
+              </button>
+
+              <button
+                style={redBtn}
+                onClick={() => {
+
+                  setSelectedMember(
+                    null
+                  );
+
+                  setSelectedRole("");
+
+                }}
+              >
+                Schließen
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
     </>
   );
 }
 
-function StatCard({ title, subtitle }) {
+function StatCard({
+  title,
+  subtitle
+}) {
 
   return (
     <div
