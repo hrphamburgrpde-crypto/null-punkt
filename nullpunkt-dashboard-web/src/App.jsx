@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Career from "./pages/Career";
 
 import Sidebar from "./components/Sidebar";
 
@@ -29,6 +30,7 @@ export default function App() {
         >
           <Routes>
             <Route path="/" element={<Dashboard />} />
+	<Route path="/career" element={<Career />} />
             <Route path="/team" element={<Team />} />
             <Route path="/warnings" element={<Warnings />} />
             <Route path="/logs" element={<Logs />} />

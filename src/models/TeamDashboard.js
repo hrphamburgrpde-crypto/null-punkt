@@ -12,8 +12,6 @@ module.exports = mongoose.model(
         dashboardRole: String,
         managerRole: String,
 
-        careerRoles: [String],
-
         uprankChannel: String,
         downrankChannel: String,
         warnChannel: String,

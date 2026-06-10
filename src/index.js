@@ -3,6 +3,8 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
+const express = require("express");
+const cors = require("cors");
 const BotBan = require('./models/BotBan');
 
 const {
@@ -31,6 +33,11 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ MongoDB verbunden'))
@@ -117,7 +124,6 @@ client.once(Events.ClientReady, () => {
     console.log(`✅ Eingeloggt als ${client.user.tag}`);
     console.log(`${client.user.tag} ist online.`);
 });
-
 process.on('unhandledRejection', err => {
     console.log('❌ Unhandled Rejection:', err);
 });
@@ -126,5 +132,146 @@ process.on('uncaughtException', err => {
     console.log('❌ Uncaught Exception:', err);
 });
 module.exports = client;
+
+
+app.get("/", (req, res) => {
+    res.json({
+        success: true,
+        service: "Null Punkt API"
+    });
+});
+
+app.listen(3000, () => {
+    console.log("✅ API läuft auf Port 3000");
+});
+
+app.get("/api/roles/:guildId", async (req, res) => {
+
+    try {
+
+        const guild = client.guilds.cache.get(
+            req.params.guildId
+        );
+
+console.log("Guild gesucht:", req.params.guildId);
+
+console.log(
+    "Verfügbare Guilds:",
+    client.guilds.cache.map(g => ({
+        id: g.id,
+        name: g.name
+    }))
+);
+
+
+        if (!guild) {
+            return res.status(404).json({
+                success: false,
+                message: "Guild nicht gefunden"
+            });
+        }
+
+        const roles = guild.roles.cache
+            .filter(role => !role.managed)
+            .map(role => ({
+                id: role.id,
+                name: role.name
+            }))
+            .sort((a, b) =>
+                a.name.localeCompare(b.name)
+            );
+
+        res.json({
+            success: true,
+            roles
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            success: false
+        });
+
+    }
+
+});
+
+app.get("/api/guilds", (req, res) => {
+
+    const guilds = client.guilds.cache.map(guild => ({
+        id: guild.id,
+        name: guild.name
+    }));
+
+    res.json(guilds);
+
+});
+
+
+const TeamCareer = require("./models/TeamCareer");
+
+app.post("/api/career/add", async (req, res) => {
+
+    try {
+
+        const {
+            guildId,
+            roleId,
+            roleName
+        } = req.body;
+
+        const count =
+            await TeamCareer.countDocuments({
+                guildId
+            });
+
+        const career =
+            await TeamCareer.create({
+                guildId,
+                roleId,
+                roleName,
+                position: count + 1
+            });
+
+        res.json({
+            success: true,
+            career
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            success: false
+        });
+
+    }
+
+});
+
+app.get("/api/career/:guildId", async (req, res) => {
+
+    const careers =
+        await TeamCareer.find({
+            guildId: req.params.guildId
+        }).sort({
+            position: 1
+        });
+
+    res.json({
+        success: true,
+        careers
+    });
+
+});
+
+
+POST /api/career/add
+GET /api/career/:guildId
+
+
 
 client.login(process.env.TOKEN);

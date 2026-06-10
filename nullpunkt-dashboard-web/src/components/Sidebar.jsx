@@ -14,6 +14,9 @@ export default function Sidebar() {
 
       <MenuItem to="/" text="🏠 Übersicht" />
       <MenuItem to="/team" text="👥 Team" />
+
+      <MenuItem to="/career" text="📈 Laufbahn" />
+
       <MenuItem to="/warnings" text="⚠️ Teamwarns" />
       <MenuItem to="/logs" text="📋 Logs" />
       <MenuItem to="/settings" text="⚙️ Einstellungen" />

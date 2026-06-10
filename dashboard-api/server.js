@@ -7,6 +7,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 
 const teamRoute = require("./routes/team");
+const careerRoute = require("./routes/career");
 
 const app = express();
 
