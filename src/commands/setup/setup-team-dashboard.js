@@ -52,15 +52,6 @@ module.exports = {
                 .setRequired(true)
         )
 
-        .addStringOption(option =>
-            option
-                .setName("laufbahn_rollen")
-                .setDescription(
-                    "Mit Komma trennen (z.B. Support,Moderator,Admin)"
-                )
-                .setRequired(true)
-        )
-
         .setDefaultMemberPermissions(
             PermissionFlagsBits.Administrator
         ),
@@ -68,28 +59,34 @@ module.exports = {
     async execute(interaction) {
 
         const dashboardRole =
-            interaction.options.getRole("dashboard_rolle");
+            interaction.options.getRole(
+                "dashboard_rolle"
+            );
 
         const managerRole =
-            interaction.options.getRole("manager_rolle");
+            interaction.options.getRole(
+                "manager_rolle"
+            );
 
         const uprankChannel =
-            interaction.options.getChannel("uprank_kanal");
+            interaction.options.getChannel(
+                "uprank_kanal"
+            );
 
         const downrankChannel =
-            interaction.options.getChannel("downrank_kanal");
+            interaction.options.getChannel(
+                "downrank_kanal"
+            );
 
         const warnChannel =
-            interaction.options.getChannel("warn_kanal");
+            interaction.options.getChannel(
+                "warn_kanal"
+            );
 
         const kickChannel =
-            interaction.options.getChannel("kick_kanal");
-
-        const careerRoles =
-            interaction.options
-                .getString("laufbahn_rollen")
-                .split(",")
-                .map(role => role.trim());
+            interaction.options.getChannel(
+                "kick_kanal"
+            );
 
         await TeamDashboard.findOneAndUpdate(
             {
@@ -98,15 +95,23 @@ module.exports = {
             {
                 guildId: interaction.guild.id,
 
-                dashboardRole: dashboardRole.id,
-                managerRole: managerRole.id,
+                dashboardRole:
+                    dashboardRole.id,
 
-                careerRoles,
+                managerRole:
+                    managerRole.id,
 
-                uprankChannel: uprankChannel.id,
-                downrankChannel: downrankChannel.id,
-                warnChannel: warnChannel.id,
-                kickChannel: kickChannel.id
+                uprankChannel:
+                    uprankChannel.id,
+
+                downrankChannel:
+                    downrankChannel.id,
+
+                warnChannel:
+                    warnChannel.id,
+
+                kickChannel:
+                    kickChannel.id
             },
             {
                 upsert: true,
@@ -117,17 +122,52 @@ module.exports = {
         await interaction.reply({
             embeds: [
                 {
-                    color: 0x5865F2,
-                    title: "✅ Team Dashboard eingerichtet",
+                    color: 0x57F287,
+                    title:
+                        "✅ Team Dashboard eingerichtet",
+
                     fields: [
                         {
-                            name: "📋 Laufbahn Rollen",
-                            value: careerRoles.join("\n")
+                            name:
+                                "👥 Dashboard Rolle",
+                            value:
+                                `<@&${dashboardRole.id}>`
+                        },
+                        {
+                            name:
+                                "🛡️ Manager Rolle",
+                            value:
+                                `<@&${managerRole.id}>`
+                        },
+                        {
+                            name:
+                                "📈 Uprank Logs",
+                            value:
+                                `<#${uprankChannel.id}>`
+                        },
+                        {
+                            name:
+                                "📉 Downrank Logs",
+                            value:
+                                `<#${downrankChannel.id}>`
+                        },
+                        {
+                            name:
+                                "⚠️ Warn Logs",
+                            value:
+                                `<#${warnChannel.id}>`
+                        },
+                        {
+                            name:
+                                "🚫 Kick Logs",
+                            value:
+                                `<#${kickChannel.id}>`
                         }
                     ]
                 }
             ],
             ephemeral: true
         });
+
     }
 };
