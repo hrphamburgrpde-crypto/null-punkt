@@ -469,7 +469,73 @@ app.get("/api/team/:guildId", async (req, res) => {
 
 });
 
+const TeamCareer = require("./models/TeamCareer");
+
 app.post("/api/team/uprank", async (req, res) => {
+
+    try {
+
+        const {
+            guildId,
+            userId,
+            newRoleId
+        } = req.body;
+
+        const guild =
+            client.guilds.cache.get(
+                guildId
+            );
+
+        if (!guild) {
+            return res.status(404).json({
+                success: false,
+                message: "Guild nicht gefunden"
+            });
+        }
+
+        const member =
+            await guild.members.fetch(
+                userId
+            );
+
+        const careerRoles =
+            await TeamCareer.find({
+                guildId
+            });
+
+        for (const role of careerRoles) {
+
+            if (
+                member.roles.cache.has(
+                    role.roleId
+                )
+            ) {
+                await member.roles.remove(
+                    role.roleId
+                );
+            }
+
+        }
+
+        await member.roles.add(
+            newRoleId
+        );
+
+        res.json({
+            success: true
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            success: false
+        });
+
+    }
+
+});, async (req, res) => {
 
     try {
 
