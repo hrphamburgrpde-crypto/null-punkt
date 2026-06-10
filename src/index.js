@@ -6,6 +6,26 @@ const mongoose = require('mongoose');
 const express = require("express");
 const cors = require("cors");
 const BotBan = require('./models/BotBan');
+import { useEffect, useState } from "react";
+const [members, setMembers] = useState([]);
+
+useEffect(() => {
+
+  fetch(
+    "http://localhost:3000/api/team/1511348767733842021"
+  )
+    .then(res => res.json())
+    .then(data => {
+
+      if (data.success) {
+        setMembers(data.members);
+      }
+
+    });
+
+}, []);
+
+
 
 const {
     Client,
@@ -393,6 +413,68 @@ app.post("/api/career/down/:id", async (req, res) => {
 
         res.json({
             success: true
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            success: false
+        });
+
+    }
+
+});
+
+
+app.get("/api/team/:guildId", async (req, res) => {
+
+    try {
+
+        const guild =
+            client.guilds.cache.get(
+                req.params.guildId
+            );
+
+        if (!guild) {
+            return res.status(404).json({
+                success: false
+            });
+        }
+
+        await guild.members.fetch();
+
+        const members =
+            guild.members.cache
+                .filter(member =>
+                    !member.user.bot
+                )
+                .map(member => ({
+
+                    id: member.id,
+
+                    username:
+                        member.user.username,
+
+                    avatar:
+                        member.user.displayAvatarURL(),
+
+                    roles:
+                        member.roles.cache
+                            .filter(r =>
+                                r.name !== "@everyone"
+                            )
+                            .map(r => ({
+                                id: r.id,
+                                name: r.name
+                            }))
+
+                }));
+
+        res.json({
+            success: true,
+            members
         });
 
     } catch (err) {
