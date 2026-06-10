@@ -1,34 +1,21 @@
 export default function Team() {
-  const members = [
-    {
-      id: 1,
-      name: "Lukas",
-      role: "Manager",
-      warns: 0,
-      avatar: "https://cdn.discordapp.com/embed/avatars/0.png"
-    },
-    {
-      id: 2,
-      name: "Max",
-      role: "Moderator",
-      warns: 1,
-      avatar: "https://cdn.discordapp.com/embed/avatars/1.png"
-    },
-    {
-      id: 3,
-      name: "Tom",
-      role: "Support",
-      warns: 0,
-      avatar: "https://cdn.discordapp.com/embed/avatars/2.png"
-    },
-    {
-      id: 4,
-      name: "Lisa",
-      role: "Support",
-      warns: 2,
-      avatar: "https://cdn.discordapp.com/embed/avatars/3.png"
-    }
-  ];
+const [members, setMembers] = useState([]);
+import { useEffect, useState } from "react";
+  useEffect(() => {
+
+  fetch(
+    "http://localhost:3000/api/team/1511348767733842021"
+  )
+    .then(res => res.json())
+    .then(data => {
+
+      if (data.success) {
+        setMembers(data.members);
+      }
+
+    });
+
+}, []);
 
   return (
     <>
@@ -108,7 +95,7 @@ export default function Team() {
             >
               <img
                 src={member.avatar}
-                alt={member.name}
+                alt={member.username}
                 style={{
                   width: "60px",
                   height: "60px",
@@ -117,14 +104,14 @@ export default function Team() {
               />
 
               <div>
-                <h3>{member.name}</h3>
+                <h3>{member.username}</h3>
 
                 <span
                   style={{
                     background:
-                      member.role === "Manager"
+                      member.roles?.[0]?.name || "Keine Rolle" === "Manager"
                         ? "#f59e0b"
-                        : member.role === "Moderator"
+                        : member.roles?.[0]?.name || "Keine Rolle" === "Moderator"
                         ? "#2563eb"
                         : "#10b981",
                     padding: "4px 10px",
