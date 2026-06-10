@@ -263,9 +263,56 @@ export default function Team() {
               }}
             >
 
-              <button style={greenBtn}>
-                Befördern
-              </button>
+              <button
+  style={greenBtn}
+  onClick={async () => {
+
+    if (!selectedRole) return;
+
+    const res = await fetch(
+      "http://localhost:3000/api/team/uprank",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+        body: JSON.stringify({
+
+          guildId:
+            "1511348767733842021",
+
+          userId:
+            selectedMember.id,
+
+          newRoleId:
+            selectedRole
+
+        })
+      }
+    );
+
+    const data =
+      await res.json();
+
+    if (data.success) {
+
+      alert(
+        "Mitglied befördert!"
+      );
+
+      setSelectedMember(
+        null
+      );
+
+      setSelectedRole("");
+
+    }
+
+  }}
+>
+  Befördern
+</button>
 
               <button
                 style={redBtn}
