@@ -5,23 +5,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const express = require("express");
 const cors = require("cors");
-const BotBan = require('./models/BotBan');
-
-  fetch(
-    "http://localhost:3000/api/team/1511348767733842021"
-  )
-    .then(res => res.json())
-    .then(data => {
-
-      if (data.success) {
-        setMembers(data.members);
-      }
-
-    });
-
-}, []);
-
-
+const BotBan = require('./models/BotBan')
 
 const {
     Client,
