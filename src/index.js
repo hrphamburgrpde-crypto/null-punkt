@@ -7,8 +7,6 @@ const express = require("express");
 const cors = require("cors");
 const BotBan = require('./models/BotBan');
 
-useEffect(() => {
-
   fetch(
     "http://localhost:3000/api/team/1511348767733842021"
   )
