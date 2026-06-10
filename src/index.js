@@ -268,10 +268,31 @@ app.get("/api/career/:guildId", async (req, res) => {
 
 });
 
+app.delete("/api/career/:id", async (req, res) => {
 
-POST /api/career/add
-GET /api/career/:guildId
+    try {
 
+        const TeamCareer =
+            require("./models/TeamCareer");
 
+        await TeamCareer.findByIdAndDelete(
+            req.params.id
+        );
+
+        res.json({
+            success: true
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            success: false
+        });
+
+    }
+
+});
 
 client.login(process.env.TOKEN);
