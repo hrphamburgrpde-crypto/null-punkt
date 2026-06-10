@@ -188,13 +188,41 @@ export default function Career() {
                   gap: "10px"
                 }}
               >
-                <button style={blueBtn}>
-                  ⬆️
-                </button>
+                <button
+  style={blueBtn}
+  onClick={async () => {
 
-                <button style={orangeBtn}>
-                  ⬇️
-                </button>
+    await fetch(
+      `http://localhost:3000/api/career/up/${career._id}`,
+      {
+        method: "POST"
+      }
+    );
+
+    loadCareers();
+
+  }}
+>
+  ⬆️
+</button>
+
+                <button
+  style={orangeBtn}
+  onClick={async () => {
+
+    await fetch(
+      `http://localhost:3000/api/career/down/${career._id}`,
+      {
+        method: "POST"
+      }
+    );
+
+    loadCareers();
+
+  }}
+>
+  ⬇️
+</button>
 
                 <button style={redBtn}>
                   🗑️

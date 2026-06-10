@@ -295,4 +295,116 @@ app.delete("/api/career/:id", async (req, res) => {
 
 });
 
+app.post("/api/career/up/:id", async (req, res) => {
+
+    try {
+
+        const current =
+            await TeamCareer.findById(
+                req.params.id
+            );
+
+        if (!current) {
+            return res.json({
+                success: false
+            });
+        }
+
+        const above =
+            await TeamCareer.findOne({
+                guildId: current.guildId,
+                position:
+                    current.position - 1
+            });
+
+        if (!above) {
+            return res.json({
+                success: false
+            });
+        }
+
+        const oldPosition =
+            current.position;
+
+        current.position =
+            above.position;
+
+        above.position =
+            oldPosition;
+
+        await current.save();
+        await above.save();
+
+        res.json({
+            success: true
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            success: false
+        });
+
+    }
+
+});
+
+app.post("/api/career/down/:id", async (req, res) => {
+
+    try {
+
+        const current =
+            await TeamCareer.findById(
+                req.params.id
+            );
+
+        if (!current) {
+            return res.json({
+                success: false
+            });
+        }
+
+        const below =
+            await TeamCareer.findOne({
+                guildId: current.guildId,
+                position:
+                    current.position + 1
+            });
+
+        if (!below) {
+            return res.json({
+                success: false
+            });
+        }
+
+        const oldPosition =
+            current.position;
+
+        current.position =
+            below.position;
+
+        below.position =
+            oldPosition;
+
+        await current.save();
+        await below.save();
+
+        res.json({
+            success: true
+        });
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            success: false
+        });
+
+    }
+
+});
+
 client.login(process.env.TOKEN);
