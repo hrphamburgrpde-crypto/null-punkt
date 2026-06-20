@@ -1,0 +1,72 @@
+* [33m46e3c28[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Initial commit
+* [33m44b26e2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mrecovery[m[33m)[m Remove career roles from setup team dashboard
+* [33m9ff819f[m Career uprank system
+* [33m07d6598[m Discord uprank system
+* [33m409fa9f[m Uprank modal and career roles
+* [33m7a99be3[m Real Discord team page
+* [33md528cea[m Load real Discord members
+* [33m8ff7431[m Update index.js
+* [33m634f270[m Update index.js
+* [33m1772d36[m Update index.js
+* [33me890f6c[m Update index.js
+* [33macf724f[m Discord team members API
+* [33m2a3cae5[m Career ordering
+* [33mdf5312d[m Career API fix
+* [33m05f104c[m Team career system
+* [33m853deb5[m Team Dashboard Update
+* [33mceb97de[m Team Dashboard Update
+* [33mbfb15ad[m add team dashboard setup
+* [33m805e8e4[m fix broadcast modal handler
+* [33m0591ecb[m add owner broadcast command
+* [33m772c7be[m fix shift offline checkout check
+* [33mb93eba8[m fix premium code max uses
+* [33m2c2d72f[m restore interaction create handler
+* [33mcb7b148[m move bot ban check to interaction handler
+* [33mbd9b3a6[m add bot ban commands
+* [33me5f0132[m fix security event loader
+* [33m97f308b[m add bot ban model
+* [33m4a312a3[m add bot ban command blocker
+* [33mfb9c981[m fix verify captcha duplicate
+* [33m0763132[m fix verify setup role saving
+* [33m1aeb6f7[m fix verify role lookup
+* [33mb3db1b9[m fix index syntax
+* [33m580e10f[m add premium security alerts and admin lock
+* [33m46784f4[m remove matrix system
+* [33mea9478a[m add premium matrix system
+* [33mf1fb98d[m update cmds premium categories
+* [33m54109c1[m add premium server list panel
+* [33m21f4896[m debug premium owner
+* [33m25af283[m add premium code system
+* [33m9685d7c[m add cmds command
+* [33mc41a820[m fix send embed syntax
+* [33mcacc191[m update send embed no color
+* [33m3a8dda1[m update send embed ping options
+* [33mffb1761[m add welcome goodbye events and preview
+* [33m48f6d7a[m add welcome goodbye panel controls
+* [33m338a620[m add welcome goodbye setup panels
+* [33m36e2986[m add automod whitelist selection
+* [33m98f6c02[m add automod whitelist panel
+* [33mddb8e5b[m fix automod panel data
+* [33m05bfb34[m update automod panel buttons
+* [33mc19d063[m debug automod message checks
+* [33m6771522[m fix automod everyone detection
+* [33m2bfff72[m add automod message checks
+* [33mcf0bfb3[m add automod setup panel
+* [33mda12ac6[m fix backup permission overwrites
+* [33mac7d6b0[m fix lockdown skip locked channels and events
+* [33md52943a[m add server lockdown system
+* [33mbbfee6f[m add danger delete commands
+* [33m4b67e33[m fix backup load roles and channel embeds
+* [33m24103fb[m add backup delete command
+* [33m801daaf[m fix backup load replace server
+* [33m6396002[m add backup load
+* [33m18899b5[m add backup system
+* [33m29bcf9f[m fix setup verify options
+* [33m92dbbcc[m update send embed modal colors
+* [33m749e8c8[m fix loader logs
+* [33m81b5a43[m add advanced shift system
+* [33m9ab355e[m fix index command handler
+* [33m6bf3b7f[m new command
+* [33m18834e7[m fix start path
+* [33m55c063f[m sync package lock
+* [33mf72d4dc[m upload full bot
